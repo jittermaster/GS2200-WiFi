@@ -2,7 +2,7 @@
 
 [GS2200 WiFi add-on board](https://idy-design.com/product/is110b.html) operation
 
-![image](https://raw.githubusercontent.com/jittermaster/GS2200-WiFi/master/IS110B.jpg)
+![image](https://raw.githubusercontent.com/jittermaster/GS2200-WiFi/master/iS110B.jpg)
 
 ## Description
 
