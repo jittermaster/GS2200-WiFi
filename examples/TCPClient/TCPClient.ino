@@ -15,11 +15,8 @@
  *  Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
 */
 
-
-#include <SPI.h>
-#include "GS2200Hal.h"
-#include "AppFunc.h"		
-
+#include <GS2200Hal.h>
+#include "AppFunc.h"
 
 #define  MAIN_VERSION      "1.0.0"
 
@@ -34,7 +31,7 @@ void setup() {
 	digitalWrite( LED0, LOW );   // turn the LED off (LOW is the voltage level)
 	Serial.begin( CONSOLE_BAUDRATE ); // talk to PC
 
-	/* Initilize SPI access of GS2200 */
+	/* Initialize SPI access of GS2200 */
 	Init_GS2200_SPI();
 
 	digitalWrite( LED0, HIGH ); // turn on LED
@@ -45,5 +42,5 @@ void setup() {
 void loop() {
 
 	App_TCPClient_Test(); 	/* Never return */
-		
+
 }
