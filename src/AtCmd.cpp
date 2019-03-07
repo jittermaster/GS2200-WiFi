@@ -731,10 +731,19 @@ ATCMD_RESP_E AtCmd_NCTCP( char *destAddress, char *port, char *cid)
 			/* Succesfull connection done for TCP client */
 			*cid = result[8];
 		}
-		else {
-			/* Not able to extract the CID */
-			*cid = ATCMD_INVALID_CID;
-			resp = ATCMD_RESP_ERROR;
+		else{
+			if( strstr( (const char*)RespBuffer[0], "IP" ) != NULL && 
+			    (result = strstr( (const char*)RespBuffer[1], "CONNECT" ) ) != NULL ){
+				/* Maybe destAddress is URL.
+				   Need to check the second line of the response */
+				/* Succesfull connection done for TCP client */
+				*cid = result[8];
+			}
+			else{
+				/* Not able to extract the CID */
+				*cid = ATCMD_INVALID_CID;
+				resp = ATCMD_RESP_ERROR;
+			}
 		}
 	}
 	
