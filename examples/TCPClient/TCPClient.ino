@@ -18,9 +18,8 @@
 #include <GS2200Hal.h>
 #include "AppFunc.h"
 
-#define  MAIN_VERSION      "1.0.0"
 
-#define  CONSOLE_BAUDRATE  230400
+#define  CONSOLE_BAUDRATE  115200
 
 
 // the setup function runs once when you press reset or power the board
