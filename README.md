@@ -6,7 +6,7 @@
 
 ## Description
 
-SPRESENSE-WiFi is the sample program to kick GS2200 for the WiFi data transfer.
+GS2200-WiFi is the sample program to kick GS2200 for the WiFi data transfer. SPRESENSE is expected to be the host controller.
 
 ## Features
 
