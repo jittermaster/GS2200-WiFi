@@ -10,21 +10,14 @@ GS2200-WiFi is the sample program to kick GS2200 for the WiFi data transfer. SPR
 
 ## Features
 
-- TCP Client : After connecting TCP server, it sends data on and on....
+- TCP Client : After connecting TCP server, it sends data on and on. [See the document.](./example/TCPClient/Readme.txt)
+- MQTT Publisher : After connecting MQTT broker, it sends data every 5 second. [See the document.](./Documents/GS2200_MQTT-001.pdf)
 
 ## Requirement
 
-- Arduino IDE
+- Arduino IDE 1.8.8
 - Need to install <GS2200> library, otherwise you will have the compile error
 - This will help you. (http://stupiddog.jp/note/archives/266)
-
-## Usage
-
-Change MACRO in AppFunc.cpp.
-- AP_SSID : SSID of WiFi Access Point to connect
-- PASSPHRASE : Passphrase of AP WPA2 security
-- TCPSRVR_IP : TCP Server IP Address
-- TCPSRVR_PORT : TCP Server port number
 
 ## Document
 - Visit GS2200 AT Command Document (https://y1cj3stn5fbwhv73k0ipk1eg-wpengine.netdna-ssl.com/wp-content/uploads/2018/02/GS2200M-S2W-Adapter-Command-Reference-Guide_r3.0.pdf)
