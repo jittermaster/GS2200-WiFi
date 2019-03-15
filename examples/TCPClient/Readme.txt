@@ -1,4 +1,4 @@
-# Change MACRO in AppFunc.cpp.
+Change MACRO in AppFunc.cpp.
 
 - AP_SSID : SSID of WiFi Access Point to connect
 - PASSPHRASE : Passphrase of AP WPA2 security
