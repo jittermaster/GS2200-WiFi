@@ -10,7 +10,7 @@ GS2200-WiFi is the sample program to kick GS2200 for the WiFi data transfer. SPR
 
 ## Features
 
-- TCP Client : After connecting TCP server, it sends data on and on. [See the document.](./example/TCPClient/TCP_Client.md)
+- TCP Client : After connecting TCP server, it sends data on and on. [See the document.](./examples/TCPClient/Readme.txt)
 - MQTT Publisher : After connecting MQTT broker, it sends data every 5 second. [See the document.](./Documents/GS2200_MQTT-001.pdf)
 
 ## Requirement
