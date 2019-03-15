@@ -39,9 +39,13 @@
 /*-------------------------------------------------------------------------*
  * Globals:
  *-------------------------------------------------------------------------*/
-/* Receive buffer to save response/message from GS2200 */
+
+/* Transmit buffer to send <ESC> sequence data stream to GS2200 */
 uint8_t  TxBuffer[TXBUFFER_SIZE];
+/* Receive buffer to save data from GS2200 */
 uint8_t  RxBuffer[RXBUFFER_SIZE];
+
+/* Receive buffer array to save response/message from GS2200 */
 uint8_t  *RespBuffer[NUM_OF_RESPBUFFER];
 int   RespBuffer_Index=0;
 
@@ -52,7 +56,9 @@ int   RespBuffer_Index=0;
  *-------------------------------------------------------------------------*/
 static void ConvertNumberTo4DigitASCII(uint16_t num, char *str);
 static ATCMD_SECURITYMODE_E ParseSecurityMode(const char *string);
+static void AtCmd_ParseIPAddress(const char *string, ATCMD_IP *ip);
 static uint8_t ParseIntoTokens(char *line, char deliminator, char *tokens[], uint8_t maxTokens);
+static char Search_CID( uint8_t *string );
 
 
 /*-------------------------------------------------------------------------*
@@ -166,7 +172,7 @@ static uint8_t ParseIntoTokens(char *line, char deliminator, char *tokens[], uin
  * Inputs: const char *string -- String with IP number
  *         ATCMD_IP *ip -- Structure to receive parsed IP number
  *---------------------------------------------------------------------------*/
-void AtCmd_ParseIPAddress(const char *string, ATCMD_IP *ip)
+static void AtCmd_ParseIPAddress(const char *string, ATCMD_IP *ip)
 {
 	int v1, v2, v3, v4;
 
@@ -176,6 +182,26 @@ void AtCmd_ParseIPAddress(const char *string, ATCMD_IP *ip)
 	ip->ipv4[1] = v2;
 	ip->ipv4[2] = v3;
 	ip->ipv4[3] = v4;
+}
+
+/*---------------------------------------------------------------------------*
+ * AtCmd_ParseIPAddress
+ *---------------------------------------------------------------------------*
+ * Description: Take the given string and parse into ip numbers
+ * Inputs: const char *string -- String with IP number
+ *         ATCMD_IP *ip -- Structure to receive parsed IP number
+ *---------------------------------------------------------------------------*/
+static char Search_CID( uint8_t *string )
+{
+	int i, len;
+
+	len = strlen( (char *)string );
+	for( i=0; i<len; i++ ){
+		if( (string[i]>='0' && string[i]<='9') || (string[i]>='a' && string[i]<='f') )
+			return (char)string[i];
+	}
+
+	return 0;
 }
 
 
@@ -513,7 +539,7 @@ ATCMD_RESP_E AtCmd_WA(char *pSsid, char *pBssid, uint8_t channel)
  * Description: Associate to an AP using Wi-Fi Protected Setup (WPS)
  * Inputs: AtCmd_WPSResult *result -- WPS Result, if any
  *---------------------------------------------------------------------------*/
-ATCMD_RESP_E AtCmd_WWPS(uint8_t method, char *pin, AtCmd_WPSResult *result)
+ATCMD_RESP_E AtCmd_WWPS(uint8_t method, char *pin, ATCMD_WPSResult *result)
 {
 	ATCMD_RESP_E resp;
 	int i;
@@ -1246,13 +1272,13 @@ ATCMD_RESP_E AtCmd_ParseRcvData(uint8_t *ptr)
 ATCMD_RESP_E AtCmd_RecvResponse(void)
 {
 	SPI_RESP_STATUS_E s;
-	ATCMD_RESP_E responseMsgId;
+	ATCMD_RESP_E resp;
 	uint16_t rxDataLen;
 	uint8_t *p;
 
 	
 	/* Reset the message ID */
-	responseMsgId = ATCMD_RESP_UNMATCH;
+	resp = ATCMD_RESP_UNMATCH;
 	
 	s = WiFi_Read( RxBuffer, &rxDataLen );
 
@@ -1274,13 +1300,13 @@ ATCMD_RESP_E AtCmd_RecvResponse(void)
 	p = RxBuffer;
 	while( rxDataLen-- ){
 		/* Parse the received data */
-		responseMsgId = AtCmd_ParseRcvData( p++ );
+		resp = AtCmd_ParseRcvData( p++ );
 	}             
 
 #ifdef ATCMD_DEBUG_ENABLE
-	ConsolePrintf( "GS Response: %d\r\n", responseMsgId );
+	ConsolePrintf( "GS Response: %d\r\n", resp );
 #endif    
-	return responseMsgId;
+	return resp;
 
 }	
 
@@ -1366,7 +1392,7 @@ ATCMD_RESP_E AtCmd_UDP_SendBulkData(
 		s = WiFi_Write( (char *)TxBuffer, dataLen+HEADERSIZE );
 		
 		if( s == SPI_RESP_STATUS_OK )
-			resp = AtCmd_RecvResponse();
+			resp = ATCMD_RESP_OK;
 		else
 			resp = ATCMD_RESP_SPI_ERROR;
 	}
@@ -1374,6 +1400,83 @@ ATCMD_RESP_E AtCmd_UDP_SendBulkData(
 	return resp;
 }
 
+
+/*---------------------------------  MQTT Communication  --------------------------------------*/
+
+/*---------------------------------------------------------------------------*
+ * AtCmd_MQTTCONNECT
+ *---------------------------------------------------------------------------*
+ * Description: Create a MQTT netowork connection, send MQTT CONNECT packet
+ * Inputs: char *host -- MQTT broker name or IP address
+ *         char *port -- MQTT port number
+ *         char *clientID -- ID name, this can be any string
+ *---------------------------------------------------------------------------*/
+ATCMD_RESP_E AtCmd_MQTTCONNECT( char *cid, char *host, char *port, char *clientID )
+{
+	ATCMD_RESP_E resp=ATCMD_RESP_UNMATCH;
+	char cmd[80];
+	char *result;
+	
+	sprintf( cmd, "AT+MQTTCONNECT=%s,%s,%s\r\n", host, port, clientID );
+	resp = AtCmd_SendCommand( cmd );
+
+	if( resp == ATCMD_RESP_OK && RespBuffer_Index ) {
+		if( (result = strstr( (const char*)RespBuffer[0], "IP")) != NULL) {
+			/* CID must be in the second line of the response */
+			*cid = Search_CID( RespBuffer[1] );
+#ifdef ATCMD_DEBUG_ENABLE
+			ConsolePrintf( "MQTT Server CID: %c\r\n", *cid );
+			ConsolePrintf( "MQTT Server IP Address: %s\r\n", result+3 );
+#endif    
+		}
+		else{
+			/* IP address is provided */
+			/* CID must be in the first line of the response */
+			*cid = Search_CID( RespBuffer[0] );
+		}
+	}
+
+	return resp;
+}
+
+/*---------------------------------------------------------------------------*
+ * AtCmd_MQTTPUBLISH
+ *---------------------------------------------------------------------------*
+ * Description: Send MQTT application message
+ * Inputs: char cid -- Connection ID of MQTT
+ *         char *topic -- TOPIC on MQTT broker
+ *         ATCMD_MQTTparams mqtt -- structure of {length, QoS, retain, message}
+ * Note: Only ASCII message is supported
+ *---------------------------------------------------------------------------*/
+ATCMD_RESP_E AtCmd_MQTTPUBLISH( char cid, ATCMD_MQTTparams mqtt )
+{
+        #define BUFLEN 100
+	char cmd[BUFLEN];
+	ATCMD_RESP_E resp=ATCMD_RESP_UNMATCH;
+	SPI_RESP_STATUS_E s;
+
+
+	if( strlen(mqtt.topic) < BUFLEN - 28 ){
+		sprintf( cmd, "AT+MQTTPUBLISH=%c,%s,%d,%d,%d\r\n", cid, mqtt.topic, mqtt.len, mqtt.QoS, mqtt.retain );
+		if( ATCMD_RESP_OK == AtCmd_SendCommand( cmd ) ){
+			/* MQTT Publish */
+			/*<Esc><'N'><cid><Data> */
+			sprintf( (char *)TxBuffer, "%cN%c%s", ATCMD_ESC, cid, mqtt.message );
+			/* Send the bulk data to GS2200 */
+			s = WiFi_Write( (char *)TxBuffer, strlen((char *)TxBuffer) );
+			
+			if( s == SPI_RESP_STATUS_OK )
+				resp = ATCMD_RESP_OK;
+			else
+				resp = ATCMD_RESP_SPI_ERROR;
+			
+			return resp;
+		}
+	}
+	else
+		return ATCMD_RESP_INPUT_TOO_LONG;
+
+}
 
 
 

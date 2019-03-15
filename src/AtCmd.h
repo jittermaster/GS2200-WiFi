@@ -69,7 +69,8 @@ typedef enum {
     ATCMD_RESP_TCP_SERVER_CONNECT,
     ATCMD_RESP_TIMEOUT,
     ATCMD_RESP_NO_MORE_MEMORY,
-    ATCMD_RESP_SPI_ERROR
+    ATCMD_RESP_SPI_ERROR,
+    ATCMD_RESP_INPUT_TOO_LONG
 } ATCMD_RESP_E;
 
 typedef enum {
@@ -154,10 +155,19 @@ typedef struct {
 } ATCMD_NetworkStatus;
 
 typedef struct {
-    char ssid[ATCMD_SSID_MAX_LENGTH + 1];
-    char password[ATCMD_PASSWORD_MAX_LENGTH + 1];
-    uint16_t channel;
-} AtCmd_WPSResult;
+	char ssid[ATCMD_SSID_MAX_LENGTH + 1];
+	char password[ATCMD_PASSWORD_MAX_LENGTH + 1];
+	uint16_t channel;
+} ATCMD_WPSResult;
+
+typedef struct {
+	char     topic[20];
+	uint16_t len;
+	uint8_t  QoS;
+	uint8_t  retain;
+	char     message[30];
+} ATCMD_MQTTparams;
+
 
 /*************<Function prototye forward delarations >***************/
 void AtCmd_Init(void);
@@ -175,7 +185,7 @@ ATCMD_RESP_E AtCmd_WM(ATCMD_MODE_E mode);
 ATCMD_RESP_E AtCmd_WSEC(ATCMD_SECURITYMODE_E security);
 ATCMD_RESP_E AtCmd_WPAPSK(char *pSsid, char *pPsk);
 ATCMD_RESP_E AtCmd_WA(char *pSsid, char *pBssid, uint8_t channel);
-ATCMD_RESP_E AtCmd_WWPS(uint8_t method, char *pin, AtCmd_WPSResult *result);
+ATCMD_RESP_E AtCmd_WWPS(uint8_t method, char *pin, ATCMD_WPSResult *result);
 ATCMD_RESP_E AtCmd_WSTATUS(void);
 ATCMD_RESP_E AtCmd_WD(void);
 ATCMD_RESP_E AtCmd_NDHCP(uint8_t n);
@@ -198,6 +208,8 @@ ATCMD_RESP_E AtCmd_ParseRcvData(uint8_t *ptr);
 ATCMD_RESP_E AtCmd_RecvResponse(void);
 ATCMD_RESP_E AtCmd_SendBulkData(uint8_t cid, const void *txBuf, uint16_t dataLen);
 ATCMD_RESP_E AtCmd_UDP_SendBulkData(uint8_t cid, const void *txBuf, uint16_t dataLen, const char *pUdpClientIP, uint16_t udpClientPort);
+ATCMD_RESP_E AtCmd_MQTTCONNECT( char *cid, char *host, char *port, char *clientID );
+ATCMD_RESP_E AtCmd_MQTTPUBLISH( char cid, ATCMD_MQTTparams mqttparams );
 ATCMD_RESP_E AtCmd_APCLIENTINFO(void);
 
 #endif /* _GS_ATCMD_H_ */
