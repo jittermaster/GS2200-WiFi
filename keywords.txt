@@ -1,0 +1,43 @@
+#######################################
+# Datatypes (KEYWORD1)
+#######################################
+
+#AT Command Hweader
+
+ATCMD_NetworkStatus	KEYWORD1
+ATCMD_NetworkScanEntry	KEYWORD1
+ATCMD_NetworkStatus	KEYWORD1
+
+#######################################
+# Methods and Functions (KEYWORD2)
+#######################################
+
+#AT Command Hweader
+
+AtCmd_Init	KEYWORD2
+AtCmd_AT	KEYWORD2
+AtCmd_VER	KEYWORD2
+AtCmd_ATE	KEYWORD2
+AtCmd_RESET	KEYWORD2
+
+#######################################
+# Instances(KEYWORD2)
+#######################################
+
+#######################################
+# Class members(KEYWORD2)
+#######################################
+
+
+#######################################
+# Constants(LITERAL1)
+#######################################
+
+#AT Command Hweader
+
+ATCMD_FSM_START		LITERAL1
+ATCMD_FSM_RESPONSE	LITERAL1
+ATCMD_FSM_ESC_START	LITERAL1
+ATCMD_FSM_BULK_DATA	LITERAL1
+ATCMD_FSM_UDP_BULK_DATA	LITERAL1
+
