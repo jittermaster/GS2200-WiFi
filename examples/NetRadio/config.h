@@ -27,9 +27,6 @@
 #define DANCE_WAVE
 //#define DANCE_WAVE_RETRO
 
-//#define  TCPSRVR_IP     "174.37.159.206"
-//#define  TCPSRVR_PORT   "8052"
-
 #ifdef JPOP_SAKURA
 #define  RADIO_NAME     "J-Pop Sakura"
 #define  RADIO_FILENAME "stream"
@@ -41,14 +38,13 @@
 #define  RADIO_NAME     "Dance Wave!"
 #define  RADIO_FILENAME "dance.mp3"
 #define  RADIO_IP       "dancewave.online"
-//#define  RADIO_IP       "78.31.65.20"
 #define  RADIO_PORT     "8080"
 #endif
 
 #ifdef DANCE_WAVE_RETRO
 #define  RADIO_NAME     "Dance Wave Retro!"
 #define  RADIO_FILENAME "retrodance.mp3"
-#define  RADIO_IP       "78.31.65.20"
+#define  RADIO_IP       "dancewave.online"
 #define  RADIO_PORT     "8080"
 #endif
 
