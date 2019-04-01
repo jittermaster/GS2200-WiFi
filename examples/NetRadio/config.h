@@ -20,12 +20,38 @@
 /*-------------------------------------------------------------------------*
  * Configration
  *-------------------------------------------------------------------------*/
-#define  AP_SSID     ""
-#define  PASSPHRASE  ""
+#define  AP_SSID     "XXXXXXXXXX"
+#define  PASSPHRASE  "XXXXXXXXXX"
 
-#define  TCPSRVR_IP     ""
-#define  TCPSRVR_PORT   ""
+//#define JPOP_SAKURA
+#define DANCE_WAVE
+//#define DANCE_WAVE_RETRO
 
-#define  RADIO_SITE ""
+//#define  TCPSRVR_IP     "174.37.159.206"
+//#define  TCPSRVR_PORT   "8052"
+
+#ifdef JPOP_SAKURA
+#define  RADIO_NAME     "J-Pop Sakura"
+#define  RADIO_FILENAME "stream"
+#define  RADIO_IP       "158.69.38.195"
+#define  RADIO_PORT     "20278"
+#endif
+
+#ifdef DANCE_WAVE
+#define  RADIO_NAME     "Dance Wave!"
+#define  RADIO_FILENAME "dance.mp3"
+#define  RADIO_IP       "dancewave.online"
+//#define  RADIO_IP       "78.31.65.20"
+#define  RADIO_PORT     "8080"
+#endif
+
+#ifdef DANCE_WAVE_RETRO
+#define  RADIO_NAME     "Dance Wave Retro!"
+#define  RADIO_FILENAME "retrodance.mp3"
+#define  RADIO_IP       "78.31.65.20"
+#define  RADIO_PORT     "8080"
+#endif
+
+#define  RADIO_SITE "GET /" RADIO_FILENAME " HTTP/1.1\r\nHOST: " RADIO_IP ":" RADIO_PORT "\r\nConnection: close\r\n\r\n"
 
 #endif /*_CONFIG_H_*/

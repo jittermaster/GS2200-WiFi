@@ -20,6 +20,7 @@
 #include "AppFunc.h"
 #include "config.h"
 #include <Audio.h>
+#include <LowPower.h>
 
 AudioClass *theAudio;
 
@@ -43,14 +44,17 @@ static void audio_attention_cb(const ErrorAttentionParam *atprm)
 {
   puts("Attention!");
   
-  if (atprm->error_code >= AS_ATTENTION_CODE_WARNING)
+//  if (atprm->error_code > AS_ATTENTION_CODE_WARNING)
+  if (atprm->error_att_sub_code == AS_ATTENTION_SUB_CODE_SIMPLE_FIFO_UNDERFLOW)
     {
-    //  exit(1);
+      LowPower.reboot();
    }
 }
 
 // the setup function runs once when you press reset or power the board
 void setup() {
+
+      LowPower.begin();
 
 	/* initialize digital pin LED_BUILTIN as an output. */
 	pinMode(LED0, OUTPUT);
@@ -62,14 +66,18 @@ void setup() {
 
 	digitalWrite( LED0, HIGH ); // turn on LED
 
+  puts(RADIO_SITE);
+
   // start audio system
   theAudio = AudioClass::getInstance();
   theAudio->begin(audio_attention_cb);
   puts("initialization Audio Library");
-  theAudio->setPlayerMode(AS_SETPLAYER_OUTPUTDEVICE_SPHP, AS_SP_DRV_MODE_LINEOUT);
+  theAudio->setPlayerMode(AS_SETPLAYER_OUTPUTDEVICE_SPHP, AS_SP_DRV_MODE_4DRIVER);
   err_t err = theAudio->initPlayer(AudioClass::Player0, AS_CODECTYPE_MP3, "/mnt/sd0/BIN", AS_SAMPLINGRATE_AUTO, AS_CHANNEL_STEREO);
   puts("initialization Player Library");
 
+  theAudio->setVolume(-160);
+  
 	/* WiFi Module Initialize */
 	App_InitModule();
 	App_ConnectAP();
@@ -80,12 +88,72 @@ void setup() {
 
 }
 
+static int es_reader(int argc, FAR char *argv[])
+{
+
+  static int state = 0; // 0 is "header search", 1 is "read payload"  
+  static int fetch_size = 0; /*�ŏ��ɓǂݍ��މ񐔁B�{���o�C�g���ǂ��B*/
+  ATCMD_RESP_E resp;
+
+  (void)argc;
+  (void)argv;
+
+while(1){
+  /*Wait for data.*/
+//  puts("loop");
+  while( !Get_GPIO37Status() ){
+    usleep(10000);
+  }
+
+  while( Get_GPIO37Status() ){
+    resp = AtCmd_RecvResponse();
+
+    if( ATCMD_RESP_BULK_DATA_RX == resp ){
+      if( Check_CID( server_cid ) ){
+        
+        ESCBuffer_p = ESCBuffer+1;
+        ESCBufferCnt = ESCBufferCnt -1;
+        
+        if(state== 0){
+          while(ESCBufferCnt > 3){
+            if( ('\r' == *(ESCBuffer_p)) &&
+              ('\n' == *(ESCBuffer_p+1)) &&
+              ('\r' == *(ESCBuffer_p+2)) &&
+              ('\n' == *(ESCBuffer_p+3)) ){
+                state=1;
+                ESCBuffer_p = ESCBuffer_p+3;
+                ESCBufferCnt = ESCBufferCnt-3;
+                ConsoleLog( "\nfind\n");
+                break;
+              }
+            ESCBuffer_p++;
+            ESCBufferCnt--;
+          }
+        }
+
+        if(state== 1){
+          theAudio->writeFrames(AudioClass::Player0, ESCBuffer_p, ESCBufferCnt);
+        }
+      }
+      
+      WiFi_InitESCBuffer();
+    }
+    
+    static int cnt =0;
+    if(cnt==50){
+      puts("start");
+      theAudio->startPlayer(AudioClass::Player0);
+      cnt++;
+    }else{
+      cnt++;
+    }
+  }
+}
+
+}
+
 // the loop function runs over and over again forever
 void loop() {
-
-	static int state = 0; // 0 is "header search", 1 is "read payload"  
-	static int fetch_size = 0; /*�ŏ��ɓǂݍ��މ񐔁B�{���o�C�g���ǂ��B*/
-	ATCMD_RESP_E resp;
 
 //	ConsoleLog( "Start to send TCP Data");
 //	Prepare for the next chunck of incoming data
@@ -99,60 +167,10 @@ void loop() {
 		delay(1);
 	}
 
-	/*Wait for data.*/
-	while( !Get_GPIO37Status() ){
-		usleep(10000);
-	}
+  puts(RADIO_NAME);
+  task_create("es_reader", 155, 1024, es_reader, NULL);
 
-	while( Get_GPIO37Status() ){
-		resp = AtCmd_RecvResponse();
-
-		if( ATCMD_RESP_BULK_DATA_RX == resp ){
-			if( Check_CID( server_cid ) ){
-				
-				ConsolePrintf( "Receive %d byte\n", ESCBufferCnt);
-////ConsolePrintf( "Receive %d byte:%x \r\n", ESCBufferCnt-1, ESCBuffer+1 );
-//ConsolePrintf( "Receive %d byte:%s \r\n", ESCBufferCnt-1, ESCBuffer+1 );
-//              ConsolePrintf( "%s \r\n", ESCBuffer+1 );
-
-				ESCBuffer_p = ESCBuffer+1;
-				ESCBufferCnt = ESCBufferCnt -1;
-				
-				if(state== 0){
-					while(ESCBufferCnt > 3){
-						if( ('\r' == *(ESCBuffer_p)) &&
-							('\n' == *(ESCBuffer_p+1)) &&
-							('\r' == *(ESCBuffer_p+2)) ){
-//                          ('\r' == *(ESCBuffer_p+2)) &&
-//                          ('\n' == *(ESCBuffer_p+3)) ){
-								state=1;
-								ESCBuffer_p = ESCBuffer_p+3;
-								ESCBufferCnt = ESCBufferCnt-3;
-								ConsoleLog( "\nfind\n");
-								break;
-							}
-						ESCBuffer_p++;
-						ESCBufferCnt--;
-					}
-				}
-
-				if(state== 1){
-					theAudio->writeFrames(AudioClass::Player0, ESCBuffer_p, ESCBufferCnt);
-				}
-			}
-			
-			WiFi_InitESCBuffer();
-		}
-		
-		static int cnt =0;
-		if(cnt==20){
-			puts("start");
-			theAudio->setVolume(-160);
-			theAudio->startPlayer(AudioClass::Player0);
-			cnt++;
-		}else{
-			cnt++;
-		}
-	}
-
+  while(1){
+    sleep(100);
+  }
 }

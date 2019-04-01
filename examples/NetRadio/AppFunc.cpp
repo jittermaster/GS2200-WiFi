@@ -38,6 +38,9 @@ File myFile; /**< File object */
 
 #define  APP_DEBUG
 
+#define  TCPSRVR_IP     RADIO_IP
+#define  TCPSRVR_PORT   RADIO_PORT
+
 
 /*-------------------------------------------------------------------------*
  * Types:
@@ -113,11 +116,11 @@ void App_InitModule(void)
 	/* Enable Power save mode */
 	/* AT+WRXACTIVE=0, AT+WRXPS=1 */
 	do{
-		r = AtCmd_WRXACTIVE(0);
+		r = AtCmd_WRXACTIVE(1);
 	}while(ATCMD_RESP_OK != r); 
 
 	do{
-		r = AtCmd_WRXPS(1);
+		r = AtCmd_WRXPS(0);
 	}while(ATCMD_RESP_OK != r); 
 
 	/* Bulk Data mode */

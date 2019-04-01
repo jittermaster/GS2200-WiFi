@@ -20,7 +20,7 @@
  * Includes:
  *-------------------------------------------------------------------------*/
 #include <Arduino.h>
-#include "AtCmd.h"
+#include "GS2200AtCmd.h"
 #include "GS2200Hal.h"
 
 
