@@ -27,14 +27,23 @@ AudioClass *theAudio;
 #define  CONSOLE_BAUDRATE  115200
 
 char server_cid = 0;
-
 char TCP_Data[]=RADIO_SITE;
 
 uint8_t* ESCBuffer_p;
 extern uint8_t ESCBuffer[];
 extern uint32_t ESCBufferCnt;
 
-/**
+enum State {
+  E_RadioStart,
+  E_AudioStart,
+  E_Run,
+  E_Stop,
+  StateNum
+};
+
+State state = E_RadioStart;
+
+/**------------------------------------------------------------------------
  * @brief Audio attention callback
  *
  * When audio internal error occurc, this function will be called back.
@@ -46,15 +55,22 @@ static void audio_attention_cb(const ErrorAttentionParam *atprm)
   
 //  if (atprm->error_code > AS_ATTENTION_CODE_WARNING)
   if (atprm->error_att_sub_code == AS_ATTENTION_SUB_CODE_SIMPLE_FIFO_UNDERFLOW)
-    {
+   {
+//      state = E_Stop;
+      LowPower.reboot();
+   }else if(atprm->error_att_sub_code == AS_ATTENTION_SUB_CODE_DSP_EXEC_ERROR){
+      // Don't Care.
+   }else{
       LowPower.reboot();
    }
 }
 
-// the setup function runs once when you press reset or power the board
+/**------------------------------------------------------------------------
+ * the setup function runs once when you press reset or power the board
+ */
 void setup() {
 
-      LowPower.begin();
+  LowPower.begin();
 
 	/* initialize digital pin LED_BUILTIN as an output. */
 	pinMode(LED0, OUTPUT);
@@ -65,9 +81,7 @@ void setup() {
 	Init_GS2200_SPI();
 
 	digitalWrite( LED0, HIGH ); // turn on LED
-
-  puts(RADIO_SITE);
-
+  
   // start audio system
   theAudio = AudioClass::getInstance();
   theAudio->begin(audio_attention_cb);
@@ -81,24 +95,89 @@ void setup() {
 	/* WiFi Module Initialize */
 	App_InitModule();
 	App_ConnectAP();
+  
+  digitalWrite( LED0, LOW );  // turn off LED
+  digitalWrite( LED1, HIGH ); // turn on LED
+  
+}
 
+/**------------------------------------------------------------------------
+ * Start process for web radio
+ */
+void start_radio() {
   do{
     server_cid = App_ConnectWeb();
   }while(server_cid == ATCMD_INVALID_CID);
-
+  
+  digitalWrite( LED1, LOW );  // turn off LED
+  digitalWrite( LED2, HIGH ); // turn on LED
 }
 
+/**------------------------------------------------------------------------
+ * Write to AudioSubSytem @ RadioStart State
+ */
+void write_StartRadio(uint8_t* pt, uint32_t sz)
+{
+  while(sz > 3){
+    if( ('\r' == *(pt)) &&
+        ('\n' == *(pt+1)) &&
+        ('\r' == *(pt+2)) &&
+        ('\n' == *(pt+3)) ){
+          state = E_AudioStart;
+          pt = pt+3;
+          sz = sz-3;
+          ConsoleLog( "\nfind\n");
+          break;
+    }
+    pt++;
+    sz--;
+  }
+  if(state == E_AudioStart){
+    write_StartAudio(pt, sz);
+  }
+}
+
+/**------------------------------------------------------------------------
+ * Write to AudioSubSytem @ AudioStart State
+ */
+const int start_size = 8000;
+void write_StartAudio(uint8_t* pt, uint32_t sz)
+{
+  static int buffered_size = 0;
+
+  buffered_size += sz;
+  if(buffered_size > start_size){
+    puts("start");
+    theAudio->startPlayer(AudioClass::Player0);
+    state = E_Run;
+  }
+  write_Run(pt,sz);
+}
+
+/**------------------------------------------------------------------------
+ * Write to AudioSubSytem @ Runnig State
+ */
+void write_Run(uint8_t* pt, uint32_t sz)
+{
+  err_t err = AUDIOLIB_ECODE_SIMPLEFIFO_ERROR;
+  while(err == AUDIOLIB_ECODE_SIMPLEFIFO_ERROR){
+    err = theAudio->writeFrames(AudioClass::Player0, pt, sz);
+    usleep(10000);
+  }
+}
+
+/**------------------------------------------------------------------------
+ * ES reader thread
+ */
 static int es_reader(int argc, FAR char *argv[])
 {
-
-  static int state = 0; // 0 is "header search", 1 is "read payload"  
-  static int fetch_size = 0; /*�ŏ��ɓǂݍ��މ񐔁B�{���o�C�g���ǂ��B*/
   ATCMD_RESP_E resp;
 
   (void)argc;
   (void)argv;
 
 while(1){
+
   /*Wait for data.*/
 //  puts("loop");
   while( !Get_GPIO37Status() ){
@@ -113,47 +192,40 @@ while(1){
         
         ESCBuffer_p = ESCBuffer+1;
         ESCBufferCnt = ESCBufferCnt -1;
-        
-        if(state== 0){
-          while(ESCBufferCnt > 3){
-            if( ('\r' == *(ESCBuffer_p)) &&
-              ('\n' == *(ESCBuffer_p+1)) &&
-              ('\r' == *(ESCBuffer_p+2)) &&
-              ('\n' == *(ESCBuffer_p+3)) ){
-                state=1;
-                ESCBuffer_p = ESCBuffer_p+3;
-                ESCBufferCnt = ESCBufferCnt-3;
-                ConsoleLog( "\nfind\n");
-                break;
-              }
-            ESCBuffer_p++;
-            ESCBufferCnt--;
-          }
-        }
 
-        if(state== 1){
-          theAudio->writeFrames(AudioClass::Player0, ESCBuffer_p, ESCBufferCnt);
+        switch(state){
+          case E_RadioStart:
+            write_StartRadio(ESCBuffer_p, ESCBufferCnt);
+            break;
+          case E_AudioStart:
+            write_StartAudio(ESCBuffer_p, ESCBufferCnt);
+            break;
+          case E_Run:
+            write_Run(ESCBuffer_p, ESCBufferCnt);
+            break;
+          case E_Stop:
+            theAudio->stopPlayer(AudioClass::Player0,AS_STOPPLAYER_NORMAL);
+            state = E_AudioStart;
+            break;
+          default:
+            puts("error!");
+            exit(1);
         }
       }
-      
       WiFi_InitESCBuffer();
-    }
-    
-    static int cnt =0;
-    if(cnt==50){
-      puts("start");
-      theAudio->startPlayer(AudioClass::Player0);
-      cnt++;
-    }else{
-      cnt++;
     }
   }
 }
 
 }
 
-// the loop function runs over and over again forever
+/**------------------------------------------------------------------------
+ * the loop function runs over and over again forever
+ */
+
 void loop() {
+
+  start_radio();
 
 //	ConsoleLog( "Start to send TCP Data");
 //	Prepare for the next chunck of incoming data
@@ -171,6 +243,6 @@ void loop() {
   task_create("es_reader", 155, 1024, es_reader, NULL);
 
   while(1){
-    sleep(100);
+    sleep(10000);
   }
 }

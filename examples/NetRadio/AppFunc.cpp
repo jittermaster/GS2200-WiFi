@@ -25,12 +25,6 @@
 #include "AppFunc.h"
 #include "config.h"
 
-//#include <File.h>
-//
-/*将来SDカードは消す。デバッグ用*/
-#include <SDHCI.h>
-File myFile; /**< File object */ 
-
 /*-------------------------------------------------------------------------*
  * Constants:
  *-------------------------------------------------------------------------*/
@@ -69,7 +63,7 @@ void App_InitModule(void)
 {
     AtCmd_Init();
     
-  /*WiFi初期化。ライブラリ化をする？*/
+    /*Initialize  WiFi Module. */
 	ATCMD_RESP_E r = ATCMD_RESP_UNMATCH;
 	ATCMD_REGDOMAIN_E regDomain;
 	char macid[20];
