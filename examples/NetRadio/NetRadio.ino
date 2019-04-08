@@ -16,7 +16,7 @@
 */
 
 #include <GS2200Hal.h>
-#include <AtCmd.h>
+#include <GS2200AtCmd.h>
 #include "AppFunc.h"
 #include "config.h"
 #include <Audio.h>
@@ -56,8 +56,9 @@ static void audio_attention_cb(const ErrorAttentionParam *atprm)
 //  if (atprm->error_code > AS_ATTENTION_CODE_WARNING)
   if (atprm->error_att_sub_code == AS_ATTENTION_SUB_CODE_SIMPLE_FIFO_UNDERFLOW)
    {
-//      state = E_Stop;
-      LowPower.reboot();
+      state = E_Stop;
+      digitalWrite( LED2, HIGH ); // turn off LED
+      digitalWrite( LED3, HIGH ); // turn on LED
    }else if(atprm->error_att_sub_code == AS_ATTENTION_SUB_CODE_DSP_EXEC_ERROR){
       // Don't Care.
    }else{
@@ -150,6 +151,9 @@ void write_StartAudio(uint8_t* pt, uint32_t sz)
     puts("start");
     theAudio->startPlayer(AudioClass::Player0);
     state = E_Run;
+    buffered_size = 0;
+    digitalWrite( LED2, LOW );  // turn off LED
+    digitalWrite( LED3, HIGH ); // turn on LED
   }
   write_Run(pt,sz);
 }
@@ -180,7 +184,8 @@ while(1){
 
   /*Wait for data.*/
 //  puts("loop");
-  while( !Get_GPIO37Status() ){
+  for( int i= 200;Get_GPIO37Status()==0;i--){
+    if(i==0) {LowPower.reboot();}
     usleep(10000);
   }
 
@@ -206,6 +211,8 @@ while(1){
           case E_Stop:
             theAudio->stopPlayer(AudioClass::Player0,AS_STOPPLAYER_NORMAL);
             state = E_AudioStart;
+            digitalWrite( LED3, LOW );  // turn off LED
+            digitalWrite( LED2, HIGH ); // turn on LED
             break;
           default:
             puts("error!");
