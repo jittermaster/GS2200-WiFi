@@ -20,8 +20,8 @@
 /*-------------------------------------------------------------------------*
  * Configration
  *-------------------------------------------------------------------------*/
-#define  AP_SSID     "XXXXXXXXXX"
-#define  PASSPHRASE  "XXXXXXXXXX"
+#define  AP_SSID     "SSID_AP"
+#define  PASSPHRASE  "1234567890"
 
 //#define JPOP_SAKURA
 #define DANCE_WAVE

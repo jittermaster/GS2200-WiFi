@@ -34,11 +34,11 @@ extern uint8_t ESCBuffer[];
 extern uint32_t ESCBufferCnt;
 
 enum State {
-  E_RadioStart,
-  E_AudioStart,
-  E_Run,
-  E_Stop,
-  StateNum
+	E_RadioStart,
+	E_AudioStart,
+	E_Run,
+	E_Stop,
+	StateNum
 };
 
 State state = E_RadioStart;
@@ -51,19 +51,19 @@ State state = E_RadioStart;
 
 static void audio_attention_cb(const ErrorAttentionParam *atprm)
 {
-  puts("Attention!");
+	puts("Attention!");
   
-//  if (atprm->error_code > AS_ATTENTION_CODE_WARNING)
-  if (atprm->error_att_sub_code == AS_ATTENTION_SUB_CODE_SIMPLE_FIFO_UNDERFLOW)
-   {
-      state = E_Stop;
-      digitalWrite( LED2, HIGH ); // turn off LED
-      digitalWrite( LED3, HIGH ); // turn on LED
-   }else if(atprm->error_att_sub_code == AS_ATTENTION_SUB_CODE_DSP_EXEC_ERROR){
-      // Don't Care.
-   }else{
-      LowPower.reboot();
-   }
+	//if (atprm->error_code > AS_ATTENTION_CODE_WARNING)
+	if (atprm->error_att_sub_code == AS_ATTENTION_SUB_CODE_SIMPLE_FIFO_UNDERFLOW)
+	{
+		state = E_Stop;
+		digitalWrite( LED2, HIGH ); // turn off LED
+		digitalWrite( LED3, HIGH ); // turn on LED
+	}else if(atprm->error_att_sub_code == AS_ATTENTION_SUB_CODE_DSP_EXEC_ERROR){
+		// Don't Care.
+	}else{
+		LowPower.reboot();
+	}
 }
 
 /**------------------------------------------------------------------------
@@ -71,7 +71,7 @@ static void audio_attention_cb(const ErrorAttentionParam *atprm)
  */
 void setup() {
 
-  LowPower.begin();
+	LowPower.begin();
 
 	/* initialize digital pin LED_BUILTIN as an output. */
 	pinMode(LED0, OUTPUT);
@@ -83,35 +83,35 @@ void setup() {
 
 	digitalWrite( LED0, HIGH ); // turn on LED
   
-  // start audio system
-  theAudio = AudioClass::getInstance();
-  theAudio->begin(audio_attention_cb);
-  puts("initialization Audio Library");
-  theAudio->setPlayerMode(AS_SETPLAYER_OUTPUTDEVICE_SPHP, AS_SP_DRV_MODE_4DRIVER);
-  err_t err = theAudio->initPlayer(AudioClass::Player0, AS_CODECTYPE_MP3, "/mnt/sd0/BIN", AS_SAMPLINGRATE_AUTO, AS_CHANNEL_STEREO);
-  puts("initialization Player Library");
-
-  theAudio->setVolume(-160);
-  
+	// start audio system
+	theAudio = AudioClass::getInstance();
+	theAudio->begin(audio_attention_cb);
+	puts("initialization Audio Library");
+	theAudio->setPlayerMode(AS_SETPLAYER_OUTPUTDEVICE_SPHP, AS_SP_DRV_MODE_4DRIVER);
+	err_t err = theAudio->initPlayer(AudioClass::Player0, AS_CODECTYPE_MP3, "/mnt/sd0/BIN", AS_SAMPLINGRATE_AUTO, AS_CHANNEL_STEREO);
+	puts("initialization Player Library");
+	
+	theAudio->setVolume(-160);
+	
 	/* WiFi Module Initialize */
 	App_InitModule();
 	App_ConnectAP();
-  
-  digitalWrite( LED0, LOW );  // turn off LED
-  digitalWrite( LED1, HIGH ); // turn on LED
-  
+	
+	digitalWrite( LED0, LOW );  // turn off LED
+	digitalWrite( LED1, HIGH ); // turn on LED
+	
 }
 
 /**------------------------------------------------------------------------
  * Start process for web radio
  */
 void start_radio() {
-  do{
-    server_cid = App_ConnectWeb();
-  }while(server_cid == ATCMD_INVALID_CID);
-  
-  digitalWrite( LED1, LOW );  // turn off LED
-  digitalWrite( LED2, HIGH ); // turn on LED
+	do{
+		server_cid = App_ConnectWeb();
+	}while(server_cid == ATCMD_INVALID_CID);
+	
+	digitalWrite( LED1, LOW );  // turn off LED
+	digitalWrite( LED2, HIGH ); // turn on LED
 }
 
 /**------------------------------------------------------------------------
@@ -119,23 +119,23 @@ void start_radio() {
  */
 void write_StartRadio(uint8_t* pt, uint32_t sz)
 {
-  while(sz > 3){
-    if( ('\r' == *(pt)) &&
-        ('\n' == *(pt+1)) &&
-        ('\r' == *(pt+2)) &&
-        ('\n' == *(pt+3)) ){
-          state = E_AudioStart;
-          pt = pt+3;
-          sz = sz-3;
-          ConsoleLog( "\nfind\n");
-          break;
-    }
-    pt++;
-    sz--;
-  }
-  if(state == E_AudioStart){
-    write_StartAudio(pt, sz);
-  }
+	while(sz > 3){
+		if( ('\r' == *(pt)) &&
+		    ('\n' == *(pt+1)) &&
+		    ('\r' == *(pt+2)) &&
+		    ('\n' == *(pt+3)) ){
+			state = E_AudioStart;
+			pt = pt+3;
+			sz = sz-3;
+			ConsoleLog( "\nfind\n");
+			break;
+		}
+		pt++;
+		sz--;
+	}
+	if(state == E_AudioStart){
+		write_StartAudio(pt, sz);
+	}
 }
 
 /**------------------------------------------------------------------------
@@ -144,18 +144,18 @@ void write_StartRadio(uint8_t* pt, uint32_t sz)
 const int start_size = 8000;
 void write_StartAudio(uint8_t* pt, uint32_t sz)
 {
-  static int buffered_size = 0;
-
-  buffered_size += sz;
-  if(buffered_size > start_size){
-    puts("start");
-    theAudio->startPlayer(AudioClass::Player0);
-    state = E_Run;
-    buffered_size = 0;
-    digitalWrite( LED2, LOW );  // turn off LED
-    digitalWrite( LED3, HIGH ); // turn on LED
-  }
-  write_Run(pt,sz);
+	static int buffered_size = 0;
+	
+	buffered_size += sz;
+	if(buffered_size > start_size){
+		puts("start");
+		theAudio->startPlayer(AudioClass::Player0);
+		state = E_Run;
+		buffered_size = 0;
+		digitalWrite( LED2, LOW );  // turn off LED
+		digitalWrite( LED3, HIGH ); // turn on LED
+	}
+	write_Run(pt,sz);
 }
 
 /**------------------------------------------------------------------------
@@ -163,11 +163,11 @@ void write_StartAudio(uint8_t* pt, uint32_t sz)
  */
 void write_Run(uint8_t* pt, uint32_t sz)
 {
-  err_t err = AUDIOLIB_ECODE_SIMPLEFIFO_ERROR;
-  while(err == AUDIOLIB_ECODE_SIMPLEFIFO_ERROR){
-    err = theAudio->writeFrames(AudioClass::Player0, pt, sz);
-    usleep(10000);
-  }
+	err_t err = AUDIOLIB_ECODE_SIMPLEFIFO_ERROR;
+	while(err == AUDIOLIB_ECODE_SIMPLEFIFO_ERROR){
+		err = theAudio->writeFrames(AudioClass::Player0, pt, sz);
+		usleep(10000);
+	}
 }
 
 /**------------------------------------------------------------------------
@@ -175,55 +175,55 @@ void write_Run(uint8_t* pt, uint32_t sz)
  */
 static int es_reader(int argc, FAR char *argv[])
 {
-  ATCMD_RESP_E resp;
-
-  (void)argc;
-  (void)argv;
-
-while(1){
-
-  /*Wait for data.*/
-//  puts("loop");
-  for( int i= 200;Get_GPIO37Status()==0;i--){
-    if(i==0) {LowPower.reboot();}
-    usleep(10000);
-  }
-
-  while( Get_GPIO37Status() ){
-    resp = AtCmd_RecvResponse();
-
-    if( ATCMD_RESP_BULK_DATA_RX == resp ){
-      if( Check_CID( server_cid ) ){
-        
-        ESCBuffer_p = ESCBuffer+1;
-        ESCBufferCnt = ESCBufferCnt -1;
-
-        switch(state){
-          case E_RadioStart:
-            write_StartRadio(ESCBuffer_p, ESCBufferCnt);
-            break;
-          case E_AudioStart:
-            write_StartAudio(ESCBuffer_p, ESCBufferCnt);
-            break;
-          case E_Run:
-            write_Run(ESCBuffer_p, ESCBufferCnt);
-            break;
-          case E_Stop:
-            theAudio->stopPlayer(AudioClass::Player0,AS_STOPPLAYER_NORMAL);
-            state = E_AudioStart;
-            digitalWrite( LED3, LOW );  // turn off LED
-            digitalWrite( LED2, HIGH ); // turn on LED
-            break;
-          default:
-            puts("error!");
-            exit(1);
-        }
-      }
-      WiFi_InitESCBuffer();
-    }
-  }
-}
-
+	ATCMD_RESP_E resp;
+	
+	(void)argc;
+	(void)argv;
+	
+	while(1){
+		
+		/*Wait for data.*/
+		//  puts("loop");
+		for( int i= 200;Get_GPIO37Status()==0;i--){
+			if(i==0) {LowPower.reboot();}
+			usleep(10000);
+		}
+		
+		while( Get_GPIO37Status() ){
+			resp = AtCmd_RecvResponse();
+			
+			if( ATCMD_RESP_BULK_DATA_RX == resp ){
+				if( Check_CID( server_cid ) ){
+					
+					ESCBuffer_p = ESCBuffer+1;
+					ESCBufferCnt = ESCBufferCnt -1;
+					
+					switch(state){
+					case E_RadioStart:
+						write_StartRadio(ESCBuffer_p, ESCBufferCnt);
+						break;
+					case E_AudioStart:
+						write_StartAudio(ESCBuffer_p, ESCBufferCnt);
+						break;
+					case E_Run:
+						write_Run(ESCBuffer_p, ESCBufferCnt);
+						break;
+					case E_Stop:
+						theAudio->stopPlayer(AudioClass::Player0,AS_STOPPLAYER_NORMAL);
+						state = E_AudioStart;
+						digitalWrite( LED3, LOW );  // turn off LED
+						digitalWrite( LED2, HIGH ); // turn on LED
+						break;
+					default:
+						puts("error!");
+						exit(1);
+					}
+				}
+				WiFi_InitESCBuffer();
+			}
+		}
+	}
+	
 }
 
 /**------------------------------------------------------------------------
@@ -232,24 +232,22 @@ while(1){
 
 void loop() {
 
-  start_radio();
-
-//	ConsoleLog( "Start to send TCP Data");
-//	Prepare for the next chunck of incoming data
+	start_radio();
+	
+	// Prepare for the next chunck of incoming data
 	WiFi_InitESCBuffer();
 
-//	Start the infinite loop to send the data
-
+	// Connect Net Radio server
 	if( ATCMD_RESP_OK != AtCmd_SendBulkData( server_cid, TCP_Data, strlen(TCP_Data) ) ){
 		// Data is not sent, we need to re-send the data
 		ConsoleLog( "Send Error.");
 		delay(1);
 	}
 
-  puts(RADIO_NAME);
-  task_create("es_reader", 155, 1024, es_reader, NULL);
-
-  while(1){
-    sleep(10000);
-  }
+	puts(RADIO_NAME);
+	task_create("es_reader", 155, 1024, es_reader, NULL);
+	
+	while(1){
+		sleep(10000);
+	}
 }
