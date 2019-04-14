@@ -29,7 +29,6 @@
 /*-------------------------------------------------------------------------*
  * Constants:
  *-------------------------------------------------------------------------*/
-#define  SPI_MAX_BYTE 2048
 
 #define  APP_DEBUG
 
@@ -41,7 +40,7 @@
 /*-------------------------------------------------------------------------*
  * Globals:
  *-------------------------------------------------------------------------*/
-char TCP_Data[]="GS2200 TCP Client Data Transfer.";
+char TCP_Data[]="GS2200 TCP Client Data Transfer Test";
 
 extern uint8_t ESCBuffer[];
 extern uint32_t ESCBufferCnt;
@@ -56,6 +55,64 @@ extern uint32_t ESCBufferCnt;
  * Function ProtoTypes:
  *-------------------------------------------------------------------------*/
 
+
+/*---------------------------------------------------------------------------*
+ * led_onoff
+ *---------------------------------------------------------------------------*/
+static void led_onoff( int num, bool stat )
+{
+	switch( num ){
+	case 0:
+		digitalWrite( LED0, stat );
+		break;
+
+	case 1:
+		digitalWrite( LED1, stat );
+		break;
+
+	case 2:
+		digitalWrite( LED2, stat );
+		break;
+
+	case 3:
+		digitalWrite( LED3, stat );
+		break;
+	}
+
+}
+
+/*---------------------------------------------------------------------------*
+ * led_effect
+ *---------------------------------------------------------------------------*
+ * Description: See this effect....
+ *---------------------------------------------------------------------------*/
+static void led_effect(void)
+{
+	static int cur=0, next;
+	int i;
+	static bool direction=true; // which way to go
+	
+
+	for( i=-1; i<5; i++ ){
+		if( i==cur ){
+			led_onoff( i, true );
+			if( direction )
+				led_onoff( i-1, false );
+			else
+				led_onoff( i+1, false );
+		}
+	}
+
+	if( direction ){ // 0 -> 1 -> 2 -> 3
+		if( ++cur > 4 )
+			direction = false;
+	}
+	else {
+		if( --cur < -1 )
+			direction = true;
+	}
+		
+}
 
 /*---------------------------------------------------------------------------*
  * App_InitModule
@@ -185,7 +242,7 @@ void App_TCPClient_Test(void)
 	char server_cid = 0;
 	bool served = false;
 	ATCMD_NetworkStatus networkStatus;
-
+	uint32_t timer=0;
 
 	AtCmd_Init();
 
@@ -242,6 +299,11 @@ void App_TCPClient_Test(void)
 						WiFi_InitESCBuffer();
 					}
 
+				}
+
+				if( msDelta( timer ) > 100 ){
+					timer = millis();
+					led_effect();
 				}
 			}
 

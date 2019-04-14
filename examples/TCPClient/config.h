@@ -20,8 +20,8 @@
 /*-------------------------------------------------------------------------*
  * Configration
  *-------------------------------------------------------------------------*/
-#define  AP_SSID     "AP_SSID_NAME"
-#define  PASSPHRASE  "0123456789"
+#define  AP_SSID        "AP_SSID_NAME"
+#define  PASSPHRASE     "123456789"
 
 #define  TCPSRVR_IP     "192.168.11.144"
 #define  TCPSRVR_PORT   "10001"

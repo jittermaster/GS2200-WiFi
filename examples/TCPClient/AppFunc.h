@@ -17,7 +17,6 @@
 
 #ifndef _GS_APPS_H_
 #define _GS_APPS_H_
-#define  APPS_VERSION            "1.0.0"
 
 /*-------------------------------------------------------------------------*
  * Function ProtoTypes:

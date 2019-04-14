@@ -25,8 +25,12 @@
 // the setup function runs once when you press reset or power the board
 void setup() {
 
-	/* initialize digital pin LED_BUILTIN as an output. */
+	/* initialize digital pin of LEDs as an output. */
 	pinMode(LED0, OUTPUT);
+	pinMode(LED1, OUTPUT);
+	pinMode(LED2, OUTPUT);
+	pinMode(LED3, OUTPUT);
+	
 	digitalWrite( LED0, LOW );   // turn the LED off (LOW is the voltage level)
 	Serial.begin( CONSOLE_BAUDRATE ); // talk to PC
 
