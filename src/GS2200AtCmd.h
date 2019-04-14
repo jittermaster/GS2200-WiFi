@@ -1,5 +1,5 @@
 /*
- *  AtCmd.h - GS2200 AT Command Operation
+ *  GS2200AtCmd.h - GS2200 AT Command Operation
  *  Copyright 2019 Norikazu Goto
  *
  *  This work is free software; you can redistribute it and/or modify it under the terms 
@@ -216,5 +216,5 @@ ATCMD_RESP_E AtCmd_APCLIENTINFO(void);
 
 
 /*-------------------------------------------------------------------------*
- * End of File:  AtCmd.h
+ * End of File:  GS2200AtCmd.h
  *-------------------------------------------------------------------------*/

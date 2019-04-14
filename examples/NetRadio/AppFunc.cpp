@@ -25,13 +25,15 @@
 #include "AppFunc.h"
 #include "config.h"
 
-
 /*-------------------------------------------------------------------------*
  * Constants:
  *-------------------------------------------------------------------------*/
 #define  SPI_MAX_BYTE 2048
 
 #define  APP_DEBUG
+
+#define  TCPSRVR_IP     RADIO_IP
+#define  TCPSRVR_PORT   RADIO_PORT
 
 
 /*-------------------------------------------------------------------------*
@@ -41,10 +43,6 @@
 /*-------------------------------------------------------------------------*
  * Globals:
  *-------------------------------------------------------------------------*/
-char TCP_Data[]="GS2200 TCP Client Data Transfer.";
-
-extern uint8_t ESCBuffer[];
-extern uint32_t ESCBufferCnt;
 
 
 /*-------------------------------------------------------------------------*
@@ -55,8 +53,7 @@ extern uint32_t ESCBufferCnt;
 /*-------------------------------------------------------------------------*
  * Function ProtoTypes:
  *-------------------------------------------------------------------------*/
-
-
+ 
 /*---------------------------------------------------------------------------*
  * App_InitModule
  *---------------------------------------------------------------------------*
@@ -64,6 +61,9 @@ extern uint32_t ESCBufferCnt;
  *---------------------------------------------------------------------------*/
 void App_InitModule(void)
 {
+    AtCmd_Init();
+    
+    /*Initialize  WiFi Module. */
 	ATCMD_RESP_E r = ATCMD_RESP_UNMATCH;
 	ATCMD_REGDOMAIN_E regDomain;
 	char macid[20];
@@ -110,11 +110,11 @@ void App_InitModule(void)
 	/* Enable Power save mode */
 	/* AT+WRXACTIVE=0, AT+WRXPS=1 */
 	do{
-		r = AtCmd_WRXACTIVE(0);
+		r = AtCmd_WRXACTIVE(1);
 	}while(ATCMD_RESP_OK != r); 
 
 	do{
-		r = AtCmd_WRXPS(1);
+		r = AtCmd_WRXPS(0);
 	}while(ATCMD_RESP_OK != r); 
 
 	/* Bulk Data mode */
@@ -170,85 +170,43 @@ void App_ConnectAP(void)
 
 }
 
-
 /*---------------------------------------------------------------------------*
- * App_TCPClient_Test
+ * App_ConnectWeb
  *---------------------------------------------------------------------------*
- * Description: 
- *     Connect TCP server, send data on and on
- *     Show the received data from the TCP server
+ * Description: Connection to Website
  *---------------------------------------------------------------------------*/
-
-void App_TCPClient_Test(void)
-{
+char App_ConnectWeb(void){
+	
 	ATCMD_RESP_E resp;
-	char server_cid = 0;
-	bool served = false;
+	char cid = ATCMD_INVALID_CID;
 	ATCMD_NetworkStatus networkStatus;
-
-
-	AtCmd_Init();
-
-	App_InitModule();
-	App_ConnectAP();
-
-	while (1) {
-		if (!served) {
-			resp = ATCMD_RESP_UNMATCH;
-			// Start a TCP client
-			ConsoleLog( "Start TCP Client");
-			resp = AtCmd_NCTCP( (char *)TCPSRVR_IP, (char *)TCPSRVR_PORT, &server_cid);
-			if (resp != ATCMD_RESP_OK) {
-				ConsoleLog( "No Connect!" );
-				delay(2000);
-				continue;
-			}
-			if (server_cid == ATCMD_INVALID_CID) {
-				ConsoleLog( "No CID!" );
-				delay(2000);
-				continue;
-			}
-			
-			do {
-				resp = AtCmd_NSTAT(&networkStatus);
-			} while (ATCMD_RESP_OK != resp);
-			
-			ConsoleLog( "Connected" );
-			ConsolePrintf("IP: %d.%d.%d.%d\r\n", 
-				      networkStatus.addr.ipv4[0], networkStatus.addr.ipv4[1], networkStatus.addr.ipv4[2], networkStatus.addr.ipv4[3]);
-
-			served = true;
-		}
-		else {
-			ConsoleLog( "Start to send TCP Data");
-			// Prepare for the next chunck of incoming data
-			WiFi_InitESCBuffer();
-
-			// Start the infinite loop to send the data
-			while( 1 ){
-				if( ATCMD_RESP_OK != AtCmd_SendBulkData( server_cid, TCP_Data, strlen(TCP_Data) ) ){
-					// Data is not sent, we need to re-send the data
-					delay(10);
-				}
-				
-				while( Get_GPIO37Status() ){
-					resp = AtCmd_RecvResponse();
-
-					if( ATCMD_RESP_BULK_DATA_RX == resp ){
-						if( Check_CID( server_cid ) ){
-							ConsolePrintf( "Receive %d byte:%s \r\n", ESCBufferCnt-1, ESCBuffer+1 );
-						}
-						
-						WiFi_InitESCBuffer();
-					}
-
-				}
-			}
-
-		}
+	
+	resp = ATCMD_RESP_UNMATCH;
+	// Start a TCP client
+	ConsoleLog( "Start TCP Client");
+	resp = AtCmd_NCTCP( (char *)TCPSRVR_IP, (char *)TCPSRVR_PORT, &cid);
+	if (resp != ATCMD_RESP_OK) {
+		ConsoleLog( "No Connect!" );
+		delay(2000);
+    return cid;
 	}
 
-}
+	if (cid == ATCMD_INVALID_CID) {
+		ConsoleLog( "No CID!" );
+		delay(2000);
+    return cid;
+	}
+			
+	do {
+		resp = AtCmd_NSTAT(&networkStatus);
+	} while (ATCMD_RESP_OK != resp);
+			
+	ConsoleLog( "Connected" );
+	ConsolePrintf("IP: %d.%d.%d.%d\r\n", 
+		      networkStatus.addr.ipv4[0], networkStatus.addr.ipv4[1], networkStatus.addr.ipv4[2], networkStatus.addr.ipv4[3]);
+	return cid;
+
+}	
 
 
 /*-------------------------------------------------------------------------*
