@@ -412,7 +412,7 @@ void ConsoleByteSend(uint8_t data)
 }
 
 
-#define PRINTFBUFFER 128
+#define PRINTFBUFFER 1024
 void ConsolePrintf( const char *fmt, ...)
 {
         char buf[PRINTFBUFFER]; // resulting string limited to 128 chars

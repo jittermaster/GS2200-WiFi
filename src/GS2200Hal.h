@@ -18,7 +18,6 @@
 #ifndef _GS_HAL_H_
 #define _GS_HAL_H_
 
-#define GSHAL_VERSION          "1.0.0"
 
 #define MAX_RECEIVED_DATA      1500
 #define SPI_MAX_RECEIVED_DATA  1024

@@ -524,9 +524,9 @@ ATCMD_RESP_E AtCmd_WA(char *pSsid, char *pBssid, uint8_t channel)
 	char cmd[100];
 
 	if (channel) {
-		sprintf(cmd, "AT+WA=%s,%s,%d\r\n", pSsid, (pBssid) ? pBssid : "",
-			channel);
-	} else {
+		sprintf(cmd, "AT+WA=%s,%s,%d\r\n", pSsid, (pBssid) ? pBssid : "", channel);
+	}
+	else {
 		sprintf(cmd, "AT+WA=%s\r\n", pSsid);
 	}
 	
@@ -1028,6 +1028,9 @@ ATCMD_RESP_E AtCmd_checkResponse(const char *pBuffer)
 	else if ((strstr((const char *)pBuffer, "INVALID INPUT") != NULL)) {
 		return ATCMD_RESP_INVALID_INPUT;
 	}
+	else if ((strstr((const char *)pBuffer, "INVALID CID") != NULL)) {
+		return ATCMD_RESP_INVALID_CID;
+	}
 	else if ((strstr((const char *)pBuffer, "DISASSOCIATED") != NULL)) {
 		return ATCMD_RESP_DISASSOCIATION_EVENT;
 	}
@@ -1138,23 +1141,29 @@ ATCMD_RESP_E AtCmd_ParseRcvData(uint8_t *ptr)
 			/* LF detected - Messages from GS2200 are terminated with LF character */
 			/* Copy the string to the RespBuffer */
 			if( RespBuffer_Index < NUM_OF_RESPBUFFER ){
+				if( ptr <= head ){
+					ConsoleLog( "Something wrong in buffer handling!\r\n" );
+					ConsoleLog( "ptr should be larger than head!\r\n" );
+					resp = ATCMD_RESP_ERROR_BUFFER_HANDLING;
+					rcv_state = ATCMD_FSM_START;					
+					return resp;
+				}
 				msgSize = ptr - head;
 				RespBuffer[RespBuffer_Index] = (uint8_t *)malloc(msgSize+1);
 				if( RespBuffer[RespBuffer_Index] == NULL ){
-#ifdef ATCMD_DEBUG_ENABLE
 					ConsoleLog( "Out of memory!\r\n" );
-#endif    
 					rcv_state = ATCMD_FSM_START;
 					resp = ATCMD_RESP_NO_MORE_MEMORY;
+					rcv_state = ATCMD_FSM_START;					
 					return resp;
 				}
 				memcpy( RespBuffer[RespBuffer_Index], head, msgSize );
 				/* terminate string with NULL */
-				memcpy( RespBuffer[RespBuffer_Index]+msgSize, '\0', 1 );
+				*( RespBuffer[RespBuffer_Index]+msgSize) = 0;
 				resp = AtCmd_checkResponse( (const char *)RespBuffer[RespBuffer_Index] );
 				head = ptr+1;
 				RespBuffer_Index++;
-			
+
 				if (ATCMD_RESP_UNMATCH != resp) {
 					/* command echo or end of response detected */
 					/* Now reset the  state machine */
@@ -1175,23 +1184,32 @@ ATCMD_RESP_E AtCmd_ParseRcvData(uint8_t *ptr)
 			/* Bulk data handling start */
 			/* <Esc>Z<Cid><Data Length xxxx 4 ascii char><data>   */
 			rcv_state = ATCMD_FSM_BULK_DATA;
-		} else if ('O' == *ptr) {
+		}
+		else if ( 'H' == *ptr) {
+			/* HTTP data handling start */
+			/* <Esc>H<Cid><Data Length xxxx 4 ascii char><data>   */
+			rcv_state = ATCMD_FSM_BULK_DATA;
+		}
+		else if ('O' == *ptr) {
 			/* ESC command response OK */
 			/* Note: No action is needed. */
 			rcv_state = ATCMD_FSM_START;
 			resp = ATCMD_RESP_ESC_OK;
-		} else if ( 'F' == *ptr) {
+		}
+		else if ( 'F' == *ptr) {
 			/* ESC command response FAILED */
 			/* Wrong CID, you need to check CID */
 			rcv_state = ATCMD_FSM_START;
 			resp = ATCMD_RESP_ESC_FAIL;
-		} else if ( 'y' == *ptr) {
+		}
+		else if ( 'y' == *ptr) {
 			/* Start of UDP data */
 			/* ESC y  cid IP_addr <SPC> Port <HT> <Length 4digits> data */
 			spcFlag = false;
 			htabFlag = false;
 			rcv_state = ATCMD_FSM_UDP_BULK_DATA;
-		} else {
+		}
+		else {
 			/* ESC sequence parse error !  */
 			/* Reset the receive buffer */
 			rcv_state = ATCMD_FSM_START;
@@ -1407,7 +1425,8 @@ ATCMD_RESP_E AtCmd_UDP_SendBulkData(
  * AtCmd_MQTTCONNECT
  *---------------------------------------------------------------------------*
  * Description: Create a MQTT netowork connection, send MQTT CONNECT packet
- * Inputs: char *host -- MQTT broker name or IP address
+ * Inputs: char *cid -- Connection ID is stored if connection established
+ *         char *host -- MQTT broker name or IP address
  *         char *port -- MQTT port number
  *         char *clientID -- ID name, this can be any string
  *---------------------------------------------------------------------------*/
@@ -1479,8 +1498,180 @@ ATCMD_RESP_E AtCmd_MQTTPUBLISH( char cid, ATCMD_MQTTparams mqtt )
 }
 
 
+/*---------------------------------  HTTP Communication  --------------------------------------*/
 
-/*---------------------------------  Advanced Operations  --------------------------------------*/
+/*---------------------------------------------------------------------------*
+ * AtCmd_HTTPOPEN
+ *---------------------------------------------------------------------------*
+ * Description: Open an HTTP client connection
+ * Inputs: char *cid -- Connection ID is stored, if connection established
+ *         char *host -- HTTP server name or IP address
+ *         char *port -- HTTP port number
+ *---------------------------------------------------------------------------*/
+ATCMD_RESP_E AtCmd_HTTPOPEN( char *cid, char *host, char *port )
+{
+	ATCMD_RESP_E resp=ATCMD_RESP_UNMATCH;
+	char cmd[80];
+	char *result;
+	
+	sprintf( cmd, "AT+HTTPOPEN=%s,%s\r\n", host, port );
+	resp = AtCmd_SendCommand( cmd );
+
+	if( resp == ATCMD_RESP_OK && RespBuffer_Index ) {
+		if( (result = strstr( (const char*)RespBuffer[0], "IP")) != NULL) {
+			/* CID must be in the second line of the response */
+			*cid = Search_CID( RespBuffer[1] );
+#ifdef ATCMD_DEBUG_ENABLE
+			ConsolePrintf( "HTTP Server CID: %c\r\n", *cid );
+			ConsolePrintf( "HTTP Server IP Address: %s\r\n", result+3 );
+#endif    
+		}
+		else{
+			/* IP address is provided */
+			/* CID must be in the first line of the response */
+			*cid = Search_CID( RespBuffer[0] );
+		}
+	}
+
+	return resp;
+
+}
+
+
+/*---------------------------------------------------------------------------*
+ * AtCmd_HTTPCONF
+ *---------------------------------------------------------------------------*
+ * Description: Configure the HTTP patameters
+ * Inputs: ATCMD_HTTP_HEADER param -- HTTP header parameter
+ *         char *val -- value of header
+ *---------------------------------------------------------------------------*/
+ATCMD_RESP_E AtCmd_HTTPCONF( ATCMD_HTTP_HEADER_E param, char *val )
+{
+	ATCMD_RESP_E resp=ATCMD_RESP_UNMATCH;
+	char cmd[120];
+	char *result;
+	
+	sprintf( cmd, "AT+HTTPCONF=%d,%s\r\n", param, val );
+	resp = AtCmd_SendCommand( cmd );
+
+	return resp;
+}
+
+
+/*---------------------------------------------------------------------------*
+ * AtCmd_HTTPSEND
+ *---------------------------------------------------------------------------*
+ * Description: GET/POST HTTP data
+ * Inputs: char cid -- Connection ID of MQTT
+ *         ATCMD_HTTP_METHOD type -- type of method
+ *         uint8_t timeout -- timeout of RESPONSE
+ *         char *page -- the page being accessed
+ *         uint16_t size -- actual content size
+ * Note: Support GET, POST method
+ * Note: Support only ASCII message
+ *---------------------------------------------------------------------------*/
+ATCMD_RESP_E AtCmd_HTTPSEND( char cid, ATCMD_HTTP_METHOD_E type, uint8_t timeout, char *page, char *msg )
+{
+	char cmd[120];
+	ATCMD_RESP_E resp=ATCMD_RESP_UNMATCH;
+	SPI_RESP_STATUS_E s;
+
+
+	if( strlen(msg) > 1460 ){
+		ConsoleLog( "HTTP content is too long." );
+		return ATCMD_RESP_INPUT_TOO_LONG;
+	}
+	else{
+		if( HTTP_METHOD_GET==type ){
+			sprintf( cmd, "AT+HTTPSEND=%c,%d,%d,%s\r\n", cid, type, timeout, page );
+			return AtCmd_SendCommand( cmd );
+		}
+		else if( HTTP_METHOD_POST==type ){
+			sprintf( cmd, "AT+HTTPSEND=%c,%d,%d,%s,%d\r\n", cid, type, timeout, page, strlen(msg) );
+			if( ATCMD_RESP_OK == AtCmd_SendCommand( cmd ) ){
+				/* HTTP POST */
+				/*<Esc><'H'><cid><Data> */
+				sprintf( (char *)TxBuffer, "%cH%c%s", ATCMD_ESC, cid, msg );
+				/* Send the bulk data to GS2200 */
+				s = WiFi_Write( (char *)TxBuffer, strlen((char *)TxBuffer) );
+				
+				if( s == SPI_RESP_STATUS_OK )
+					resp = ATCMD_RESP_OK;
+				else
+					resp = ATCMD_RESP_SPI_ERROR;
+				
+				return resp;
+			}
+		}
+		else{
+			ConsolePrintf( "This SPRESENSE FW does not support HTTP method : %d\r\n", type );
+			return ATCMD_RESP_ERROR;
+		}			
+			
+	}
+
+
+}
+
+
+/*---------------------------------------------------------------------------*
+ * AtCmd_HTTPCLOSE
+ *---------------------------------------------------------------------------*
+ * Description: Clost HTTP connection
+ * Inputs: char cid -- Connection ID to be closed
+ *---------------------------------------------------------------------------*/
+ATCMD_RESP_E AtCmd_HTTPCLOSE( char cid )
+{
+	ATCMD_RESP_E resp=ATCMD_RESP_UNMATCH;
+	char cmd[20];
+	
+	sprintf( cmd, "AT+HTTPCLOSE=%c\r\n", cid );
+	resp = AtCmd_SendCommand( cmd );
+
+	return resp;
+}
+
+
+/*---------------------------------  Advanced Services  --------------------------------------*/
+
+/*---------------------------------------------------------------------------*
+ * AtCmd_DNSLOOKUP
+ *---------------------------------------------------------------------------*
+ * Description: Retrieve an IP address from a host name
+ * Inputs: char *cid -- Connection ID is stored, if connection established
+ *         char *host -- HTTP server name or IP address
+ *         char *port -- HTTP port number
+ *---------------------------------------------------------------------------*/
+ATCMD_RESP_E AtCmd_DNSLOOKUP( char *host, char *ip )
+{
+	ATCMD_RESP_E resp=ATCMD_RESP_UNMATCH;
+	char cmd[80];
+	char *result, *last;
+	int i;
+	
+	sprintf( cmd, "AT+DNSLOOKUP=%s\r\n", host );
+	if( ATCMD_RESP_OK == (resp=AtCmd_SendCommand( cmd )) ){
+		if( (result = strstr( (const char*)RespBuffer[0], "IP:")) != NULL) {
+			/* store IP address */
+			result += 3; // this location must be the start of IP address
+			for( i=0, last=result; i<16; i++, last++ )
+				if( !( (*last >= '0' && *last <= '9') || *last=='.' ) )
+					break;
+
+			memcpy( ip, result, (last-result) );
+		}
+		else{
+			/* IP address is not found... */
+			resp = ATCMD_RESP_ERROR;
+		}
+		
+	}
+
+	return resp;
+}
+
+
+/*---------------------------------  Advanced Commands  --------------------------------------*/
 
 /*---------------------------------------------------------------------------*
  * AtCmd_APCLIENTINFO
