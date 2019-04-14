@@ -96,9 +96,8 @@ void loop() {
 			sprintf( mqttparams.message, "%d", count++ );
 			mqttparams.len = strlen( mqttparams.message );
 
-			if( ATCMD_RESP_OK != AtCmd_MQTTPUBLISH( server_cid, mqttparams ) ){
-				// Data is not sent, we need to re-send the data
-				delay(10);
+			if( ATCMD_RESP_OK == AtCmd_MQTTPUBLISH( server_cid, mqttparams ) ){
+				ConsolePrintf( "%d was sent\r\n", count-1 );
 			}
 
 			delay(5000); // every 5 sec 
@@ -106,9 +105,6 @@ void loop() {
 			/* just in case something from GS2200 */
 			while( Get_GPIO37Status() ){
 				resp = AtCmd_RecvResponse();
-#if 0				
-				ConsolePrintf( "GS2200 Response Status : %d\r\n", resp );
-#endif
 				if( ATCMD_RESP_DISCONNECT == resp )
 					served = false; // quite the loop
 			}

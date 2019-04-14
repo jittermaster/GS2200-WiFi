@@ -30,11 +30,8 @@
  *-------------------------------------------------------------------------*/
 #define  SPI_MAX_BYTE 2048
 
-#define  AP_SSID     "Telit_Guest"
-#define  PASSPHRASE  "qwerty123456"
-
-#define  TCPSRVR_IP     "192.168.11.144"
-#define  TCPSRVR_PORT   "10001"
+#define  AP_SSID     "SSID_AP"
+#define  PASSPHRASE  "1234567890"
 
 
 #define  APP_DEBUG
