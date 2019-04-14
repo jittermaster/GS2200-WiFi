@@ -20,7 +20,7 @@
 
 
 #define MAX_RECEIVED_DATA      1500
-#define SPI_MAX_RECEIVED_DATA  1024
+#define SPI_MAX_RECEIVED_DATA  1500
 
 #define SPI_PORT           SPI5      /* SPRESENSE Main Board SPI */ 
 #define SPI_FREQ           4000000   /* SPI Clock Frequency */
