@@ -777,6 +777,8 @@ ATCMD_RESP_E AtCmd_NCTCP( char *destAddress, char *port, char *cid)
 	return resp;
 }
 
+
+
 /*---------------------------------------------------------------------------*
  * AtCmd_NCUDP
  *---------------------------------------------------------------------------*
@@ -818,7 +820,7 @@ ATCMD_RESP_E AtCmd_NCUDP(char *destAddress, char *port, char *srcPort, uint8_t *
  * Inputs: char *port -- Server port
  *         uint8_t *cid -- Server CID
  *---------------------------------------------------------------------------*/
-ATCMD_RESP_E AtCmd_NSTCP(char *port, uint8_t *cid)
+ATCMD_RESP_E AtCmd_NSTCP(char *port, char *cid)
 {
 	char cmd[20];
 	ATCMD_RESP_E resp;
@@ -839,6 +841,7 @@ ATCMD_RESP_E AtCmd_NSTCP(char *port, uint8_t *cid)
 	return resp;
 }
 
+
 /*---------------------------------------------------------------------------*
  * AtCmd_NSUDP
  *---------------------------------------------------------------------------*
@@ -846,7 +849,7 @@ ATCMD_RESP_E AtCmd_NSTCP(char *port, uint8_t *cid)
  * Inputs: char *port -- Server Port
  *         uint8_t *cid -- Server CID 
  *---------------------------------------------------------------------------*/
-ATCMD_RESP_E AtCmd_NSUDP(char *port, uint8_t *cid)
+ATCMD_RESP_E AtCmd_NSUDP(char *port, char *cid)
 {
 	char cmd[20];
 	char * result = NULL;
@@ -1417,6 +1420,52 @@ ATCMD_RESP_E AtCmd_UDP_SendBulkData(
 	}
 
 	return resp;
+}
+
+
+/*---------------------------------------------------------------------------*
+ * WaitForTCPConnection
+ *---------------------------------------------------------------------------*
+ * Description: Waits for and parses a TCP message.
+ * Inputs:
+ *      ATLIBGS_TCPConnection *connection -- Connection structure to fill
+ *      uint32_t timeout -- Timeout in milliseconds, 0 for no timeout
+ * Outputs:
+ *      ATLIBGS_MSG_ID_E -- returns ATLIBGS_MSG_ID_RESPONSE_TIMEOUT if timeout,
+ *          or ATLIBGS_MSG_ID_DATA_RX if TCP message found.
+ *---------------------------------------------------------------------------*/
+ATCMD_RESP_E WaitForTCPConnection( char *cid, uint32_t timeout )
+{
+	ATCMD_RESP_E resp;
+	uint32_t start = millis();
+	char *p;
+	char *tokens[6];
+	uint16_t numTokens;
+
+	/* wait until message received or timeout*/
+	while (1) {
+		if( (msDelta(start) >= timeout) && (timeout) )
+			return ATCMD_RESP_TIMEOUT;
+
+		if( Get_GPIO37Status() ){
+			resp = AtCmd_RecvResponse();
+               
+			if( ATCMD_RESP_TCP_SERVER_CONNECT == resp ){
+				p = strstr( (const char*)RespBuffer[0], "CONNECT");
+				if( p ){
+					numTokens = ParseIntoTokens(p, ' ', tokens, 6);
+					if (numTokens >= 5) {
+						*cid = *tokens[2];
+						return resp;
+					}
+				}
+				else{
+					return ATCMD_RESP_ERROR;
+				}
+			}
+		}
+	}
+	
 }
 
 
