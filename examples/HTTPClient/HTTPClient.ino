@@ -1,5 +1,5 @@
 /*
- *  SPRESENSE_WiFi.ino - GainSpan WiFi Module Control Program
+ *  HTTPClient.ino - GainSpan WiFi Module Control Program
  *  Copyright 2019 Norikazu Goto
  *
  *  This work is free software; you can redistribute it and/or modify it under the terms 
@@ -117,7 +117,7 @@ void loop() {
 				resp = AtCmd_HTTPOPEN( &server_cid, HTTP_SRVR_IP, HTTP_PORT );
 			} while (ATCMD_RESP_OK != resp);
 			
-			//ConsoleLog( "Socket Open" );
+			ConsoleLog( "Socket Open" );
 			sprintf( sendData, "data=%d", count );
 			do {
 				resp = AtCmd_HTTPSEND( server_cid, HTTP_METHOD_POST, 10, "/postData", sendData );
@@ -154,10 +154,10 @@ void loop() {
 			do {
 				resp = AtCmd_HTTPCLOSE( server_cid );
 			} while( ATCMD_RESP_OK != resp && ATCMD_RESP_INVALID_CID != resp );
-			//ConsoleLog( "Socket Closed" );
+			ConsoleLog( "Socket Closed" );
 			
 			
-			delay( 2000 );
+			delay( 5000 );
 			httpStat = GET;
 			count+=100;
 			break;
@@ -168,7 +168,7 @@ void loop() {
 				resp = AtCmd_HTTPCONF( HTTP_HEADER_TRANSFER_ENCODING, "identity" );
 			} while (ATCMD_RESP_OK != resp);
 			
-			//ConsoleLog( "Open Socket" );
+			ConsoleLog( "Open Socket" );
 			do {
 				resp = AtCmd_HTTPOPEN( &server_cid, HTTP_SRVR_IP, HTTP_PORT );
 			} while (ATCMD_RESP_OK != resp);
@@ -182,6 +182,7 @@ void loop() {
 			}
 			else{
 				ConsoleLog( "?? Unexpected HTTP Response ??" );
+				ConsolePrintf( "Response Code : %d\r\n", resp );
 			}				
 
 			start = millis();
@@ -200,9 +201,9 @@ void loop() {
 			do {
 				resp = AtCmd_HTTPCLOSE( server_cid );
 			} while( ATCMD_RESP_OK != resp && ATCMD_RESP_INVALID_CID != resp );
-			//ConsoleLog( "Socket Closed" );
+			ConsoleLog( "Socket Closed" );
 			
-			delay(2000);
+			delay(5000);
 			httpStat = POST;
 			break;
 		}
