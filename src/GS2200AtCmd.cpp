@@ -201,7 +201,8 @@ static char Search_CID( uint8_t *string )
 			return (char)string[i];
 	}
 
-	return 0;
+	return ATCMD_INVALID_CID;
+
 }
 
 
@@ -1533,8 +1534,10 @@ ATCMD_RESP_E AtCmd_HTTPOPEN( char *cid, char *host, char *port )
 		}
 	}
 
-	return resp;
+	if( *cid == ATCMD_INVALID_CID )
+		resp = ATCMD_RESP_INVALID_CID;
 
+	return resp;
 }
 
 
@@ -1604,7 +1607,7 @@ ATCMD_RESP_E AtCmd_HTTPSEND( char cid, ATCMD_HTTP_METHOD_E type, uint8_t timeout
 			}
 		}
 		else{
-			ConsolePrintf( "This SPRESENSE FW does not support HTTP method : %d\r\n", type );
+			ConsolePrintf( "Not support HTTP method : %d\r\n", type );
 			return ATCMD_RESP_ERROR;
 		}			
 			
