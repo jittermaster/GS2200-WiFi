@@ -13,4 +13,7 @@ tcp_server.js in script directory is the sample code of Node.js TCP server.
 tcp_server.js calculates the receiving throughput. If you want to incrase the throughput, set the longer data in TCP_Data[],
 but don't exceed 1460 byte. 
 
-You need to install Node.js on your computer.
+You need to install Node.js on your computer, and run the fillowing command.
+
+node tcp_server.js
+
