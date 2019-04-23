@@ -1,19 +1,17 @@
 Change MACRO in config.h
 
-- AP_SSID : SSID of WiFi Access Point to connect
+- AP_SSID : SSID of GS2200 Access Point
 - PASSPHRASE : Passphrase of AP WPA2 security
-- TCPSRVR_IP : TCP Server IP Address
 - TCPSRVR_PORT : TCP Server port number
 
 
-Before running this example, you should run the TCP server.
+After running this example, your PC should associate to GS2200.
 
-tcp_server.js in script directory is the sample code of Node.js TCP server.
+Then, run tcp_client.js in script directory.
 
-tcp_server.js calculates the receiving throughput. If you want to incrase the throughput, set the longer data in TCP_Data[],
-but don't exceed 1460 byte. 
+tcp_client.js receives the data from stndard input na d sends it to GS2200 TCP server.
 
-You need to install Node.js on your computer, and run the fillowing command.
+GS2200 TCP server echoes back the data to TCP client, so tcp_client.js will display the echo back data.
 
-node tcp_server.js
+You need to install Node.js on your computer.
 
