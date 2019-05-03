@@ -37,7 +37,7 @@ int connect(const char *ssid, const char *passphrase, uint8_t channel);
 
 < Power Save Mode >
 
-In ost cased, power save mode is controlled by AT+WRXACTIVE and AT+WPXPS. If AT+WRXACTIVE=1, AT+WRXPS does not matter.
+In most cases, the power save mode is controlled by AT+WRXACTIVE and AT+WPXPS. If AT+WRXACTIVE=1, AT+WRXPS does not matter.
 
 Power save mode:
   AT+WRXACTIVE=0 && AT+WRXPS=1
