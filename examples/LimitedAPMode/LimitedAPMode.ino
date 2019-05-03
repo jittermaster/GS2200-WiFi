@@ -55,7 +55,7 @@ void setup() {
 		while(1);
 	}
 
-	/* GS2200 Association to AP */
+	/* GS2200 runs as AP */
 	if( gs2200.connect( AP_SSID, PASSPHRASE, AP_CHANNEL ) ){
 		ConsoleLog( "WiFi Network Fails" );
 		while(1);
@@ -70,7 +70,6 @@ void loop() {
 
 	ATCMD_RESP_E resp;
 	char server_cid = 0, remote_cid=0;
-	bool connected = false;
 	ATCMD_NetworkStatus networkStatus;
 	uint32_t timer=0;
 
