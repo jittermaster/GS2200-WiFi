@@ -28,7 +28,7 @@
 #define SPI_DATA_TRANSFER  SPI_PORT.transfer
 #define GPIO37             27        /* GS2200 GPIO37 Monitor */ 
 
-#define SPI_TIMEOUT        10000     /* wait for GPIO37 for this period */ 
+#define SPI_TIMEOUT        20000     /* wait for GPIO37 for this period */ 
 
 
 typedef enum {
