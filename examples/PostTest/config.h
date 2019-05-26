@@ -20,8 +20,8 @@
 /*-------------------------------------------------------------------------*
  * Configration
  *-------------------------------------------------------------------------*/
-#define  AP_SSID        "linksys"//"RM02_AP"
-#define  PASSPHRASE     "0123456789"//"1234567890"
+#define  AP_SSID        "linksys"
+#define  PASSPHRASE     "0123456789"
 
 #define  HTTP_SRVR_IP  "192.168.1.100"
 #define  HTTP_PORT     "10080"
