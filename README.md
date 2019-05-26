@@ -16,6 +16,7 @@ GS2200-WiFi is the sample program to kick GS2200 for the WiFi data transfer. SPR
 - HTTP Client : PC will run the HTTP server by Node.js, GS2200 will send POST/GET request to the HTTP server periodically.
 - Limited-AP mode : GS2200 will be the WiFi AP and works as TCP echo server. PC will associate to GS2200 AP and connects to TCP server.
 - Pass Through mode : You will send any AT commands via Serial.
+- HTTP POST Test : You will send large data size of POST request.
 
 ## Requirement
 
