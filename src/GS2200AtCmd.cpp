@@ -27,13 +27,14 @@
 /*-------------------------------------------------------------------------*
  * Constants:
  *-------------------------------------------------------------------------*/
-#define TXBUFFER_SIZE      1500
-#define RXBUFFER_SIZE      1500
+#define SPI_MAX_SIZE   1400
+#define TXBUFFER_SIZE  SPI_MAX_SIZE
+#define RXBUFFER_SIZE  1500
 
 #define NUM_OF_RESPBUFFER  32
 #define WS_MAXENTRIES      (NUM_OF_RESPBUFFER - 1)
 
-//#define ATCMD_DEBUG_ENABLE
+#define ATCMD_DEBUG_ENABLE
 
 
 /*-------------------------------------------------------------------------*
@@ -1622,46 +1623,73 @@ ATCMD_RESP_E AtCmd_HTTPCONF( ATCMD_HTTP_HEADER_E param, char *val )
  * Note: Support GET, POST method
  * Note: Support only ASCII message
  *---------------------------------------------------------------------------*/
-ATCMD_RESP_E AtCmd_HTTPSEND( char cid, ATCMD_HTTP_METHOD_E type, uint8_t timeout, char *page, char *msg )
+ATCMD_RESP_E AtCmd_HTTPSEND( char cid, ATCMD_HTTP_METHOD_E type, uint8_t timeout, char *page, char *msg, uint32_t size )
 {
 	char cmd[120];
 	ATCMD_RESP_E resp=ATCMD_RESP_UNMATCH;
 	SPI_RESP_STATUS_E s;
 
-
-	if( strlen(msg) > 1460 ){
-		ConsoleLog( "HTTP content is too long." );
-		return ATCMD_RESP_INPUT_TOO_LONG;
+	if( HTTP_METHOD_GET==type ){
+		sprintf( cmd, "AT+HTTPSEND=%c,%d,%d,%s\r\n", cid, type, timeout, page );
+		return AtCmd_SendCommand( cmd );
 	}
-	else{
-		if( HTTP_METHOD_GET==type ){
-			sprintf( cmd, "AT+HTTPSEND=%c,%d,%d,%s\r\n", cid, type, timeout, page );
-			return AtCmd_SendCommand( cmd );
-		}
-		else if( HTTP_METHOD_POST==type ){
-			sprintf( cmd, "AT+HTTPSEND=%c,%d,%d,%s,%d\r\n", cid, type, timeout, page, strlen(msg) );
-			if( ATCMD_RESP_OK == AtCmd_SendCommand( cmd ) ){
-				/* HTTP POST */
-				/*<Esc><'H'><cid><Data> */
-				sprintf( (char *)TxBuffer, "%cH%c%s", ATCMD_ESC, cid, msg );
-				/* Send the bulk data to GS2200 */
-				s = WiFi_Write( (char *)TxBuffer, strlen((char *)TxBuffer) );
-				
-				if( s == SPI_RESP_STATUS_OK )
-					resp = ATCMD_RESP_OK;
-				else
-					resp = ATCMD_RESP_SPI_ERROR;
-				
+	else if( HTTP_METHOD_POST==type ){
+		sprintf( cmd, "AT+HTTPSEND=%c,%d,%d,%s,%d\r\n", cid, type, timeout, page, size );
+		if( ATCMD_RESP_OK == AtCmd_SendCommand( cmd ) ){
+			/* HTTP POST : <Esc><'H'><cid><Data> */
+			
+			/* Send <Esc><'H'><cid> at first */
+			sprintf( (char *)TxBuffer, "%cH%c", ATCMD_ESC, cid );
+			/* Send the bulk data to GS2200 */
+			s = WiFi_Write( (char *)TxBuffer, 3 );
+			
+			if( s != SPI_RESP_STATUS_OK ){
+				resp = ATCMD_RESP_SPI_ERROR;
 				return resp;
 			}
-		}
-		else{
-			ConsolePrintf( "Not support HTTP method : %d\r\n", type );
-			return ATCMD_RESP_ERROR;
-		}			
 			
+			ConsoleLog( "Start to send data body");
+			/* Send Data */
+			if( size <= SPI_MAX_SIZE ){
+				do{
+					s = WiFi_Write( msg, size );
+					if( s != SPI_RESP_STATUS_OK )
+						delay(100);
+				}while( s != SPI_RESP_STATUS_OK );
+				
+			}
+			else{
+				while( size>SPI_MAX_SIZE ){
+					memcpy( TxBuffer, msg, SPI_MAX_SIZE );
+					s = WiFi_Write( (char *)TxBuffer, SPI_MAX_SIZE );
+			
+					if( s != SPI_RESP_STATUS_OK ){
+						delay(100);
+						continue;
+					}
+					msg += SPI_MAX_SIZE;
+					size -= SPI_MAX_SIZE;
+					ConsolePrintf( "%d remains\r\n", size);
+				}
+				
+				if( size ){
+					do{
+						s = WiFi_Write( msg, size );
+						if( s != SPI_RESP_STATUS_OK )
+							delay(100);
+					}while( s != SPI_RESP_STATUS_OK );
+				}
+				
+			}
+			
+			ConsoleLog( "Send data body DONE");
+			return ATCMD_RESP_OK;
+		}
 	}
-
+	else{
+		ConsolePrintf( "Not support HTTP method : %d\r\n", type );
+		return ATCMD_RESP_ERROR;
+	}			
 
 }
 

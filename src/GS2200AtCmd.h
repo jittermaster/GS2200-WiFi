@@ -19,7 +19,7 @@
 #define _GS_ATCM_H_
 
 
-#define  ATCMD_INVALID_CID            0xFF  /* invalid CID */
+#define ATCMD_INVALID_CID            0xFF  /* invalid CID */
 
 #define ATCMD_BSSID_MAX_LENGTH        20
 #define ATCMD_SSID_MAX_LENGTH         32
@@ -252,7 +252,7 @@ ATCMD_RESP_E AtCmd_MQTTCONNECT( char *cid, char *host, char *port, char *clientI
 ATCMD_RESP_E AtCmd_MQTTPUBLISH( char cid, ATCMD_MQTTparams mqttparams );
 ATCMD_RESP_E AtCmd_HTTPOPEN( char *cid, char *host, char *port );
 ATCMD_RESP_E AtCmd_HTTPCONF( ATCMD_HTTP_HEADER_E param, char *val );
-ATCMD_RESP_E AtCmd_HTTPSEND( char cid, ATCMD_HTTP_METHOD_E type, uint8_t timeout, char *page, char *msg );
+ATCMD_RESP_E AtCmd_HTTPSEND( char cid, ATCMD_HTTP_METHOD_E type, uint8_t timeout, char *page, char *msg, uint32_t size );
 ATCMD_RESP_E AtCmd_HTTPCLOSE( char cid );
 ATCMD_RESP_E AtCmd_DNSLOOKUP( char *host, char *ip );
 ATCMD_RESP_E AtCmd_APCLIENTINFO(void);
