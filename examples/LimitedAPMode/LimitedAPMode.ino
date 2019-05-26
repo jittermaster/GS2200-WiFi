@@ -17,7 +17,7 @@
 
 #include <GS2200Hal.h>
 #include <GS2200AtCmd.h>
-#include "TelitWiFi.h"
+#include <TelitWiFi.h>
 #include "config.h"
 
 
