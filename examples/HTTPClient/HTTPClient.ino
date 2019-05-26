@@ -17,7 +17,7 @@
 
 #include <GS2200Hal.h>
 #include <GS2200AtCmd.h>
-#include "TelitWiFi.h"
+#include <TelitWiFi.h>
 #include "config.h"
 
 
@@ -120,7 +120,7 @@ void loop() {
 			ConsoleLog( "Socket Open" );
 			sprintf( sendData, "data=%d", count );
 			do {
-				resp = AtCmd_HTTPSEND( server_cid, HTTP_METHOD_POST, 10, "/postData", sendData );
+				resp = AtCmd_HTTPSEND( server_cid, HTTP_METHOD_POST, 10, "/postData", sendData, strlen(sendData) );
 			} while (ATCMD_RESP_OK != resp);
 			
 			/* Need to receive the HTTP response */
@@ -173,7 +173,7 @@ void loop() {
 				resp = AtCmd_HTTPOPEN( &server_cid, HTTP_SRVR_IP, HTTP_PORT );
 			} while (ATCMD_RESP_OK != resp);
 
-			resp = AtCmd_HTTPSEND( server_cid, HTTP_METHOD_GET, 10, "/", "" );
+			resp = AtCmd_HTTPSEND( server_cid, HTTP_METHOD_GET, 10, "/", "", 0 );
 			if( ATCMD_RESP_BULK_DATA_RX == resp ){
 				if( Check_CID( server_cid ) ){
 					parse_httpresponse( (char *)(ESCBuffer+1) );
