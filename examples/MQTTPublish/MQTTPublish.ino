@@ -65,7 +65,7 @@ void loop() {
 		// Start a MQTT client
 		ConsoleLog( "Start MQTT Client");
 
-		resp = AtCmd_MQTTCONNECT( &server_cid, (char *)MQTT_SRVR, (char *)MQTT_PORT, (char *)MQTT_CLI_ID );
+		resp = AtCmd_MQTTCONNECT( &server_cid, (char *)MQTT_SRVR, (char *)MQTT_PORT, (char *)MQTT_CLI_ID, NULL, NULL );
 		if (resp != ATCMD_RESP_OK) {
 			ConsoleLog( "No Connect!" );
 			delay(2000);
