@@ -1481,13 +1481,17 @@ ATCMD_RESP_E WaitForTCPConnection( char *cid, uint32_t timeout )
  *         char *port -- MQTT port number
  *         char *clientID -- ID name, this can be any string
  *---------------------------------------------------------------------------*/
-ATCMD_RESP_E AtCmd_MQTTCONNECT( char *cid, char *host, char *port, char *clientID )
+ATCMD_RESP_E AtCmd_MQTTCONNECT( char *cid, char *host, char *port, char *clientID, char *UserName, char *Password )
 {
 	ATCMD_RESP_E resp=ATCMD_RESP_UNMATCH;
-	char cmd[80];
+	char cmd[180];
 	char *result;
-	
-	sprintf( cmd, "AT+MQTTCONNECT=%s,%s,%s\r\n", host, port, clientID );
+
+	if( UserName==NULL )
+		sprintf( cmd, "AT+MQTTCONNECT=%s,%s,%s\r\n", host, port, clientID );
+	else
+		sprintf( cmd, "AT+MQTTCONNECT=%s,%s,%s,%s,%s,0\r\n", host, port, clientID, UserName, Password );
+		
 	resp = AtCmd_SendCommand( cmd );
 
 	if( resp == ATCMD_RESP_OK && RespBuffer_Index ) {
@@ -1520,7 +1524,7 @@ ATCMD_RESP_E AtCmd_MQTTCONNECT( char *cid, char *host, char *port, char *clientI
  *---------------------------------------------------------------------------*/
 ATCMD_RESP_E AtCmd_MQTTPUBLISH( char cid, ATCMD_MQTTparams mqtt )
 {
-        #define BUFLEN 100
+        #define BUFLEN 180
 	char cmd[BUFLEN];
 	ATCMD_RESP_E resp=ATCMD_RESP_UNMATCH;
 	SPI_RESP_STATUS_E s;

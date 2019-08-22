@@ -166,7 +166,7 @@ typedef struct {
 } ATCMD_WPSResult;
 
 typedef struct {
-	char     topic[20];
+	char     topic[80];
 	uint16_t len;
 	uint8_t  QoS;
 	uint8_t  retain;
@@ -248,7 +248,7 @@ ATCMD_RESP_E AtCmd_RecvResponse(void);
 ATCMD_RESP_E AtCmd_SendBulkData(uint8_t cid, const void *txBuf, uint16_t dataLen);
 ATCMD_RESP_E AtCmd_UDP_SendBulkData(uint8_t cid, const void *txBuf, uint16_t dataLen, const char *pUdpClientIP, uint16_t udpClientPort);
 ATCMD_RESP_E WaitForTCPConnection( char *cid, uint32_t timeout );
-ATCMD_RESP_E AtCmd_MQTTCONNECT( char *cid, char *host, char *port, char *clientID );
+ATCMD_RESP_E AtCmd_MQTTCONNECT( char *cid, char *host, char *port, char *clientID, char *UserName, char *Password );
 ATCMD_RESP_E AtCmd_MQTTPUBLISH( char cid, ATCMD_MQTTparams mqttparams );
 ATCMD_RESP_E AtCmd_HTTPOPEN( char *cid, char *host, char *port );
 ATCMD_RESP_E AtCmd_HTTPCONF( ATCMD_HTTP_HEADER_E param, char *val );
