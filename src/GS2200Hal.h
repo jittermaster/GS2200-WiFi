@@ -18,7 +18,6 @@
 #ifndef _GS_HAL_H_
 #define _GS_HAL_H_
 
-
 #define MAX_RECEIVED_DATA      1500
 #define SPI_MAX_RECEIVED_DATA  1500
 
@@ -26,7 +25,6 @@
 #define SPI_FREQ           4000000   /* SPI Clock Frequency */
 #define SPI_MODE           SPI_MODE1 /* SPI_MODE0, SPI_MODE1, SPI_MODE3 */
 #define SPI_DATA_TRANSFER  SPI_PORT.transfer
-#define GPIO37             27        /* GS2200 GPIO37 Monitor */ 
 
 #define SPI_TIMEOUT        20000     /* wait for GPIO37 for this period */ 
 
@@ -37,12 +35,19 @@ typedef enum {
 	SPI_RESP_STATUS_TIMEOUT
 } SPI_RESP_STATUS_E;
 
+typedef enum {
+	TYPE_A = 0,
+	TYPE_B,
+	TYPE_C
+} ModuleType;
+
 
 /*-------------------------------------------------------------------------*
  * Function ProtoTypes:
  *-------------------------------------------------------------------------*/
 uint32_t msDelta(uint32_t start);
 void Init_GS2200_SPI(void);
+void Init_GS2200_SPI_type(ModuleType type);
 
 int Get_GPIO37Status(void);
 
