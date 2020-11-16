@@ -243,13 +243,13 @@ SPI_RESP_STATUS_E WiFi_Write(const void *txData, uint16_t dataLength)
 	}
 	else
 	{
-/*#ifdef GS_DEBUG
+#ifdef GS_DEBUG
 		ConsoleLog( "SPI WRITE: Incorrect Response" );
 		ConsolePrintf( "hiResponse[1]:0x%x\r\n", hiResponse[1] );
 		ConsolePrintf( "hiResponse[5]:0x%x\r\n", hiResponse[5] );
 		ConsolePrintf( "hiResponse[6]:0x%x\r\n", hiResponse[6] );
 		ConsolePrintf( "recvLen:%d\r\n", recvLen );
-#endif*/    
+#endif
 		return SPI_RESP_STATUS_ERROR;
 	}
 }
@@ -435,13 +435,13 @@ void ConsoleByteSend(uint8_t data)
 #define PRINTFBUFFER 1024
 void ConsolePrintf( const char *fmt, ...)
 {
-/*        char buf[PRINTFBUFFER]; // resulting string limited to 128 chars
+        char buf[PRINTFBUFFER]; // resulting string limited to 128 chars
         va_list args;
 
         va_start( args, fmt );
         vsnprintf( buf, PRINTFBUFFER, fmt, args);
         va_end( args );
-        Serial.print( buf );*/
+        Serial.print( buf );
 }
 
 /*-------------------------------------------------------------------------*
