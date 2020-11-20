@@ -71,17 +71,19 @@ uint32_t msDelta(uint32_t start)
 
 
 /*---------------------------------------------------------------------------*
- * Init_GS2200_SPI
+ * Init_GS2200_SPI with type
  *---------------------------------------------------------------------------*
  * Function: Initialize GS2200 SPI
  *---------------------------------------------------------------------------*/
 void Init_GS2200_SPI_type(ModuleType type)
 {
 	switch(type) {
-	case TYPE_C:
+	case iS110B_TypeC:
+		puts("Is Your module iS110B_TypeC ?");
 		GPIO37 = 20;
 		break;
 	default:
+		puts("Is Your module iS110B_TypeA or iS110B_TypeB ?");
 		GPIO37 = 27;
 		break;
 	}
@@ -104,7 +106,7 @@ void Init_GS2200_SPI_type(ModuleType type)
 void Init_GS2200_SPI(void)
 {
 	/* Start the SPI library for GS2200 control*/
-	Init_GS2200_SPI_type(TYPE_A);
+	Init_GS2200_SPI_type(iS110B_TypeA);
 
 }
 

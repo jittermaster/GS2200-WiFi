@@ -36,9 +36,9 @@ typedef enum {
 } SPI_RESP_STATUS_E;
 
 typedef enum {
-	TYPE_A = 0,
-	TYPE_B,
-	TYPE_C
+	iS110B_TypeA = 0,
+	iS110B_TypeB,
+	iS110B_TypeC,
 } ModuleType;
 
 
