@@ -161,8 +161,6 @@ bool AmbientGs2200Class::send()
   ATCMD_RESP_E resp;
 
   sleep(2);
-puts("send");
-//  ATCMD_RESP_E resp;
 
   while( !Get_GPIO37Status() );
 
