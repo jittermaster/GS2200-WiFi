@@ -147,6 +147,10 @@ int TelitWiFi::connect(const char *ssid, const char *passphrase)
 		r = AtCmd_WD(); 
 		if( ATCMD_RESP_OK != r ) continue;
 
+		/* Enable DHCP Client */
+		r = AtCmd_NDHCP( 1 );
+		if( ATCMD_RESP_OK != r ) continue;
+
 		/* Set WPA2 Passphrase */
 		r = AtCmd_WPAPSK( (char *)ssid, (char *)passphrase );
 		if( ATCMD_RESP_OK != r ) continue;
@@ -191,3 +195,4 @@ int TelitWiFi::connect(const char *ssid, const char *passphrase, uint8_t channel
 		return OK;
 	}
 }
+
