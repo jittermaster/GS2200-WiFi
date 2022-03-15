@@ -502,7 +502,7 @@ ATCMD_RESP_E AtCmd_WSEC(ATCMD_SECURITYMODE_E security)
  * Inputs: char *pSsid -- SSID (1 to 32 characters)
  *         char *pPsk -- Passphrase (8 to 63 characters)
  *---------------------------------------------------------------------------*/
-ATCMD_RESP_E AtCmd_WPAPSK(char *pSsid, char *pPsk)
+ATCMD_RESP_E AtCmd_WPAPSK(const char *pSsid, const char *pPsk)
 {
 	char cmd[60];
 	
@@ -521,7 +521,7 @@ ATCMD_RESP_E AtCmd_WPAPSK(char *pSsid, char *pPsk)
  * Outputs:
  *      ATCMD_RESP_E -- error code
  *---------------------------------------------------------------------------*/
-ATCMD_RESP_E AtCmd_WA(char *pSsid, char *pBssid, uint8_t channel)
+ATCMD_RESP_E AtCmd_WA(const char *pSsid, const char *pBssid, uint8_t channel)
 {
 	char cmd[100];
 
@@ -745,7 +745,7 @@ ATCMD_RESP_E AtCmd_NSTAT(ATCMD_NetworkStatus *pStatus)
  *         char *port -- Port string
  *         uint8_t *cid -- Client CID if connection is established
  *---------------------------------------------------------------------------*/
-ATCMD_RESP_E AtCmd_NCTCP( char *destAddress, char *port, char *cid)
+ATCMD_RESP_E AtCmd_NCTCP( const char *destAddress, const char *port, char *cid)
 {
 	char cmd[40];
 	ATCMD_RESP_E resp;
@@ -909,7 +909,7 @@ ATCMD_RESP_E AtCmd_PSDPSLEEP(uint32_t timeout)
 	char cmd[30];
 
 	if( timeout ){
-		sprintf(cmd, "AT+PSDPSLEEP=%d\r\n", timeout);
+		sprintf(cmd, "AT+PSDPSLEEP=%ld\r\n", timeout);
 /*
   Note:
   GS2200 returns the response when timer expired.
@@ -944,7 +944,7 @@ ATCMD_RESP_E AtCmd_PSSTBY(uint32_t x, uint32_t delay, uint8_t alarm1_pol, uint8_
 {
 	char cmd[80];
 
-	sprintf(cmd, "AT+PSSTBY=%d,%d,%d,%d\r\n", x, delay, alarm1_pol, alarm2_pol );
+	sprintf(cmd, "AT+PSSTBY=%ld,%ld,%d,%d\r\n", x, delay, alarm1_pol, alarm2_pol );
 /*
   Note:
   GS2200 returns the response when exiting from the Standby mode.
@@ -1550,6 +1550,7 @@ ATCMD_RESP_E AtCmd_MQTTPUBLISH( char cid, ATCMD_MQTTparams mqtt )
 	else
 		return ATCMD_RESP_INPUT_TOO_LONG;
 
+	return resp;
 }
 
 
@@ -1563,7 +1564,7 @@ ATCMD_RESP_E AtCmd_MQTTPUBLISH( char cid, ATCMD_MQTTparams mqtt )
  *         char *host -- HTTP server name or IP address
  *         char *port -- HTTP port number
  *---------------------------------------------------------------------------*/
-ATCMD_RESP_E AtCmd_HTTPOPEN( char *cid, char *host, char *port )
+ATCMD_RESP_E AtCmd_HTTPOPEN( char *cid, const char *host, const char *port )
 {
 	ATCMD_RESP_E resp=ATCMD_RESP_UNMATCH;
 	char cmd[80];
@@ -1602,11 +1603,10 @@ ATCMD_RESP_E AtCmd_HTTPOPEN( char *cid, char *host, char *port )
  * Inputs: ATCMD_HTTP_HEADER param -- HTTP header parameter
  *         char *val -- value of header
  *---------------------------------------------------------------------------*/
-ATCMD_RESP_E AtCmd_HTTPCONF( ATCMD_HTTP_HEADER_E param, char *val )
+ATCMD_RESP_E AtCmd_HTTPCONF( ATCMD_HTTP_HEADER_E param, const char *val )
 {
 	ATCMD_RESP_E resp=ATCMD_RESP_UNMATCH;
 	char cmd[120];
-	char *result;
 	
 	sprintf( cmd, "AT+HTTPCONF=%d,%s\r\n", param, val );
 	resp = AtCmd_SendCommand( cmd );
@@ -1627,7 +1627,7 @@ ATCMD_RESP_E AtCmd_HTTPCONF( ATCMD_HTTP_HEADER_E param, char *val )
  * Note: Support GET, POST method
  * Note: Support only ASCII message
  *---------------------------------------------------------------------------*/
-ATCMD_RESP_E AtCmd_HTTPSEND( char cid, ATCMD_HTTP_METHOD_E type, uint8_t timeout, char *page, char *msg, uint32_t size )
+ATCMD_RESP_E AtCmd_HTTPSEND( char cid, ATCMD_HTTP_METHOD_E type, uint8_t timeout, const char *page, const char *msg, uint32_t size )
 {
 	char cmd[120];
 	ATCMD_RESP_E resp=ATCMD_RESP_UNMATCH;
@@ -1638,7 +1638,7 @@ ATCMD_RESP_E AtCmd_HTTPSEND( char cid, ATCMD_HTTP_METHOD_E type, uint8_t timeout
 		return AtCmd_SendCommand( cmd );
 	}
 	else if( HTTP_METHOD_POST==type ){
-		sprintf( cmd, "AT+HTTPSEND=%c,%d,%d,%s,%d\r\n", cid, type, timeout, page, size );
+		sprintf( cmd, "AT+HTTPSEND=%c,%d,%d,%s,%ld\r\n", cid, type, timeout, page, size );
 		if( ATCMD_RESP_OK == AtCmd_SendCommand( cmd ) ){
 			/* HTTP POST : <Esc><'H'><cid><Data> */
 			
@@ -1693,7 +1693,9 @@ ATCMD_RESP_E AtCmd_HTTPSEND( char cid, ATCMD_HTTP_METHOD_E type, uint8_t timeout
 	else{
 		ConsolePrintf( "Not support HTTP method : %d\r\n", type );
 		return ATCMD_RESP_ERROR;
-	}			
+	}
+	
+	return resp;
 
 }
 
