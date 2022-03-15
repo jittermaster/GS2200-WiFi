@@ -74,7 +74,7 @@ void setup() {
 	}
 
 	/* GS2200 Association to AP */
-	if( gs2200.connect( AP_SSID, PASSPHRASE ) ){
+	if( gs2200.activate_station( AP_SSID, PASSPHRASE ) ){
 		ConsoleLog( "Association Fails" );
 		while(1);
 	}
@@ -173,7 +173,7 @@ void loop() {
 				resp = AtCmd_HTTPOPEN( &server_cid, HTTP_SRVR_IP, HTTP_PORT );
 			} while (ATCMD_RESP_OK != resp);
 
-			resp = AtCmd_HTTPSEND( server_cid, HTTP_METHOD_GET, 10, "/", "", 0 );
+			resp = AtCmd_HTTPSEND( server_cid, HTTP_METHOD_GET, 10, HTTP_PATH, "", 0 );
 			if( ATCMD_RESP_BULK_DATA_RX == resp ){
 				if( Check_CID( server_cid ) ){
 					parse_httpresponse( (char *)(ESCBuffer+1) );

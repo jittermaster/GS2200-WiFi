@@ -23,7 +23,7 @@
 #include <Arduino.h>
 #include <GS2200Hal.h>
 #include <GS2200AtCmd.h>
-#include "AppFunc.h"
+#include <TelitWiFi.h>
 
 #define AMBIENT_WRITEKEY_SIZE 18
 #define AMBIENT_MAX_RETRY 5
@@ -31,23 +31,26 @@
 #define AMBIENT_NUM_PARAMS 11
 #define AMBIENT_TIMEOUT 3000 // milliseconds
 
-class AmbientGs2200Class
+class AmbientGs2200
 {
 public:
 
-  AmbientGs2200Class(){}
-  ~AmbientGs2200Class(){}
+  AmbientGs2200(){}
+  ~AmbientGs2200(){}
 
-  bool begin(unsigned int channelId, const char * writeKey);
+  bool begin(TelitWiFi* wifi, uint16_t channelId, const String& writeKey);
   bool connect(char* host, int port);
-  bool set(int field,const char * data);
+  bool set(int field, const char * data);
   bool set(int field, double data);
   bool set(int field, int data);
   bool clear(int field);
-  bool send(void);
+  bool send();
   void end(){ }
 
 private:
+
+  TelitWiFi* mWifi;
+  char mCid;
 
   uint16_t mChannelId;
   String mWriteKey;
@@ -57,7 +60,5 @@ private:
     String item;
   } mData[AMBIENT_NUM_PARAMS];
 };
-
-extern AmbientGs2200Class AmbientGs2200;
 
 #endif // AMBIENT_GS2200_h

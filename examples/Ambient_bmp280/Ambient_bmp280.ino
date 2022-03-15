@@ -18,22 +18,19 @@
 
 #include <GS2200Hal.h>
 #include <GS2200AtCmd.h>
-#include "AppFunc.h"
-#include "config.h"
+#include <AmbientGs2200.h>
+#include <TelitWiFi.h>
 
-#include "AmbientGs2200.h"
+#include "config.h"
 
 #include <Adafruit_BMP280.h>
 
-#define BMP_SCK 13
-#define BMP_MISO 12
-#define BMP_MOSI 11 
-#define BMP_CS 10
+TelitWiFi gs2200;
+TWIFI_Params gsparams = {ATCMD_MODE_STATION, ATCMD_PSAVE_DEFAULT};
+
+AmbientGs2200 theAmbientGs2200;
 
 Adafruit_BMP280 bmp; // I2C
-
-const unsigned int channelId = xxxxx;      // Please write your Ambient ID.
-const char* writeKey = "xxxxxxxxxxxxxxxx"; // Please write your Ambient Key.
 
 void setup()
 {
@@ -48,16 +45,24 @@ void setup()
 
   /* WiFi Module Initialize */
   Init_GS2200_SPI();
-  AtCmd_Init();
-  App_InitModule();
-  App_ConnectAP();
+
+  if( gs2200.begin( gsparams ) ){
+    Serial.println( "GS2200 Initilization Fails" );
+    while(1);
+  }
+
+  /* GS2200 Association to AP */
+  if( gs2200.activate_station( AP_SSID, PASSPHRASE ) ){
+    Serial.println( "Association Fails" );
+    while(1);
+  }
 
   digitalWrite( LED0, LOW );
   digitalWrite( LED1, HIGH );
 
   Serial.println(F("GS2200 Initialized"));
 
-  AmbientGs2200.begin(channelId, writeKey);
+  theAmbientGs2200.begin(&gs2200, channelId, writeKey);
 
   Serial.println(F("Ambient Initialized"));
 
@@ -87,10 +92,10 @@ void loop()
   Serial.println();
 
   // Send to Ambient
-  AmbientGs2200.set(1, (String(bmp.readTemperature())).c_str());
-  AmbientGs2200.set(2, (String(bmp.readPressure())).c_str());
+  theAmbientGs2200.set(1, (String(bmp.readTemperature())).c_str());
+  theAmbientGs2200.set(2, (String(bmp.readPressure())).c_str());
 
-  int ret = AmbientGs2200.send();
+  int ret = theAmbientGs2200.send();
 
   if (ret == 0) {
     Serial.println("*** ERROR! RESET Wifi! ***\n");

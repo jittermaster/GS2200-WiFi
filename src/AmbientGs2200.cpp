@@ -33,22 +33,20 @@ const char  path[] = "/api/v2/channels/";
 const char* ambient_keys[] = {"\"d1\":\"", "\"d2\":\"", "\"d3\":\"", "\"d4\":\"", "\"d5\":\"", "\"d6\":\"", "\"d7\":\"", "\"d8\":\"", "\"lat\":\"", "\"lng\":\"", "\"created\":\""};
 
 const char  server[] = "54.65.206.59";
-const int   port = 80;
-
-char server_cid = 0;
+const char  port[] = "80";
 
 uint8_t* ESCBuffer_p;
 extern uint8_t ESCBuffer[];
 extern uint32_t ESCBufferCnt;
 
-
-bool AmbientGs2200Class::begin(unsigned int id, const char* writeKey)
+bool AmbientGs2200::begin(TelitWiFi* wifi, uint16_t id, const String& writeKey)
 {
 #ifdef AMBIENT_DEBUG
     Serial.println("Initialize Ambient");
 #endif
 
-//    server_cid = App_ConnectWeb(server,port);
+  mWifi = wifi;
+  mCid = ATCMD_INVALID_CID;
 
   if (sizeof(writeKey) > AMBIENT_WRITEKEY_SIZE) {
       ERR("writeKey length > AMBIENT_WRITEKEY_SIZE");
@@ -70,7 +68,7 @@ bool AmbientGs2200Class::begin(unsigned int id, const char* writeKey)
   return true;
 }
 
-bool AmbientGs2200Class::set(int field, const char* data)
+bool AmbientGs2200::set(int field, const char* data)
 {
   --field;
   if (field < 0 || field >= AMBIENT_NUM_PARAMS) {
@@ -88,17 +86,17 @@ bool AmbientGs2200Class::set(int field, const char* data)
   return true;
 }
 
-bool AmbientGs2200Class::set(int field, double data)
+bool AmbientGs2200::set(int field, double data)
 {
   return set(field,String(data).c_str());
 }
 
-bool AmbientGs2200Class::set(int field, int data)
+bool AmbientGs2200::set(int field, int data)
 {
   return set(field, String(data).c_str());
 }
 
-bool AmbientGs2200Class::clear(int field)
+bool AmbientGs2200::clear(int field)
 {
   --field;
   if (field < 0 || field >= AMBIENT_NUM_PARAMS) {
@@ -109,11 +107,11 @@ bool AmbientGs2200Class::clear(int field)
   return true;
 }
 
-bool AmbientGs2200Class::send()
+bool AmbientGs2200::send()
 {
   // Prepare for the next chunck of incoming data
-  WiFi_InitESCBuffer();
-  server_cid = App_ConnectWeb(server,port);
+
+  mCid = mWifi->connect( server, port );
 
   /* Retrieve the file with the specified URL. */
   String post = "{\"writeKey\":\"" + mWriteKey + "\",";
@@ -139,9 +137,9 @@ bool AmbientGs2200Class::send()
   Serial.println(data);
 
   uint16_t length = data.length();
-  printf("cid=%c\tlengh=%d\n%s\n",server_cid,length,data.c_str());
+  printf("cid=%c\tlengh=%d\n%s\n",mCid,length,data.c_str());
   
-  if( ATCMD_RESP_OK != AtCmd_SendBulkData( server_cid, data.c_str(), length )){
+  if( ATCMD_RESP_OK != AtCmd_SendBulkData( mCid, data.c_str(), length )){
     // Data is not sent, we need to re-send the data
     ConsoleLog( "Send Error.");
     delay(1);
@@ -152,41 +150,16 @@ bool AmbientGs2200Class::send()
   data = post;
   length = data.length();
 
-  if( ATCMD_RESP_OK != AtCmd_SendBulkData( server_cid, data.c_str(), length )){
+  if( ATCMD_RESP_OK != AtCmd_SendBulkData( mCid, data.c_str(), length )){
     // Data is not sent, we need to re-send the data
     ConsoleLog( "Send Error.");
     delay(1);
   }
 
-  ATCMD_RESP_E resp;
-
   sleep(2);
 
-  while( !Get_GPIO37Status() );
+  mWifi->stop(mCid);
+  mCid = ATCMD_INVALID_CID;
 
-  while( Get_GPIO37Status() ){
-    resp = AtCmd_RecvResponse();
-
-    if( ATCMD_RESP_BULK_DATA_RX == resp ){
-
-      if( Check_CID( server_cid ) ){
-        ESCBuffer_p = ESCBuffer+1;
-        ESCBufferCnt = ESCBufferCnt -1;
-      }
-
-      WiFi_InitESCBuffer();
-
-    }else if( ATCMD_RESP_DISCONNECT == resp ){
-      resp = AtCmd_NCLOSE(server_cid);
-      resp = AtCmd_NCLOSEALL();
-      WiFi_InitESCBuffer();
-    }
-
-    sleep(2);
-
-  }
- 
   return true;
 }
-
-AmbientGs2200Class AmbientGs2200;

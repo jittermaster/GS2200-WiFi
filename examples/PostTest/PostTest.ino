@@ -68,7 +68,7 @@ void setup() {
 	}
 
 	/* GS2200 Association to AP */
-	if( gs2200.connect( AP_SSID, PASSPHRASE ) ){
+	if( gs2200.activate_station( AP_SSID, PASSPHRASE ) ){
 		ConsoleLog( "Association Fails" );
 		while(1);
 	}

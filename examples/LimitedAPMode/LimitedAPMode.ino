@@ -56,7 +56,7 @@ void setup() {
 	}
 
 	/* GS2200 runs as AP */
-	if( gs2200.connect( AP_SSID, PASSPHRASE, AP_CHANNEL ) ){
+	if( gs2200.activate_ap( AP_SSID, PASSPHRASE, AP_CHANNEL ) ){
 		ConsoleLog( "WiFi Network Fails" );
 		while(1);
 	}
