@@ -82,7 +82,6 @@ void setup()
   pinMode(LED1, OUTPUT);
   pinMode(LED2, OUTPUT);
   pinMode(LED3, OUTPUT);
-  
 
   ledOn(LED0);
   Serial.begin( CONSOLE_BAUDRATE );
@@ -105,7 +104,7 @@ void setup()
   }
 
   Serial.println("Setup Camera...");
-  
+
   CamErr err = theCamera.begin();
   if (err != CAM_ERR_SUCCESS) { printError(err); }
 
@@ -117,11 +116,10 @@ void setup()
 
   err = theCamera.setAutoWhiteBalanceMode(g_wb);
   if (err != CAM_ERR_SUCCESS) { printError(err); }
-puts("koko3");
 
   err = theCamera.setStillPictureImageFormat(g_width, g_height, g_img_fmt, g_divisor);
   if (err != CAM_ERR_SUCCESS) { printError(err); }
-  
+
   Serial.println("Setup Camera done.");
 
   ledOn(LED0);
@@ -153,7 +151,7 @@ void loop() {
     delay(2000);
     return;
   }
-    
+
   while( 1 ) {
     ConsoleLog( "Waiting for TCP Client");
 
@@ -226,7 +224,7 @@ void loop() {
                 delay(2000);
                 return;
               }
-           }
+            }
           } else {
             // send HTTP Response
             String response = "HTTP/1.1 404 Not Found";

@@ -84,7 +84,6 @@ void setup()
   pinMode(LED1, OUTPUT);
   pinMode(LED2, OUTPUT);
   pinMode(LED3, OUTPUT);
-  
 
   ledOn(LED0);
   Serial.begin( CONSOLE_BAUDRATE );
@@ -119,7 +118,6 @@ void setup()
 
   err = theCamera.setAutoWhiteBalanceMode(g_wb);
   if (err != CAM_ERR_SUCCESS) { printError(err); }
-puts("koko3");
 
   err = theCamera.setStillPictureImageFormat(g_width, g_height, g_img_fmt, g_divisor);
   if (err != CAM_ERR_SUCCESS) { printError(err); }
@@ -139,10 +137,9 @@ void loop() {
   ATCMD_NetworkStatus networkStatus;
   uint32_t timer=0;
 
-
   resp = ATCMD_RESP_UNMATCH;
   ConsoleLog( "Start TCP Server");
-  
+
   resp = AtCmd_NSTCP( TCPSRVR_PORT, &server_cid);
   if (resp != ATCMD_RESP_OK) {
     ConsoleLog( "No Connect!" );
@@ -155,7 +152,7 @@ void loop() {
     delay(2000);
     return;
   }
-    
+
   while( 1 ) {
     ConsoleLog( "Waiting for TCP Client");
 
@@ -167,7 +164,7 @@ void loop() {
     // Prepare for the next chunck of incoming data
     WiFi_InitESCBuffer();
     sleep(1);
-    
+
     unsigned long cam_before, cam_after, one_before, one_after;
     while( Get_GPIO37Status() ) {
       resp = AtCmd_RecvResponse();
