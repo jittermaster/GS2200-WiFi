@@ -18,6 +18,7 @@
 #ifndef _GS_ATCM_H_
 #define _GS_ATCM_H_
 
+#include "File.h"
 
 #define ATCMD_INVALID_CID            0xFF  /* invalid CID */
 
@@ -250,12 +251,20 @@ ATCMD_RESP_E AtCmd_UDP_SendBulkData(uint8_t cid, const void *txBuf, uint16_t dat
 ATCMD_RESP_E WaitForTCPConnection( char *cid, uint32_t timeout );
 ATCMD_RESP_E AtCmd_MQTTCONNECT( char *cid, char *host, char *port, char *clientID, char *UserName, char *Password );
 ATCMD_RESP_E AtCmd_MQTTPUBLISH( char cid, ATCMD_MQTTparams mqttparams );
+ATCMD_RESP_E AtCmd_MQTTSUBSCRIBE( char cid, ATCMD_MQTTparams mqttparams );
 ATCMD_RESP_E AtCmd_HTTPOPEN( char *cid, const char *host, const char *port );
 ATCMD_RESP_E AtCmd_HTTPCONF( ATCMD_HTTP_HEADER_E param, const char *val );
 ATCMD_RESP_E AtCmd_HTTPSEND( char cid, ATCMD_HTTP_METHOD_E type, uint8_t timeout, const char *page, const char *msg, uint32_t size );
 ATCMD_RESP_E AtCmd_HTTPCLOSE( char cid );
 ATCMD_RESP_E AtCmd_DNSLOOKUP( char *host, char *ip );
 ATCMD_RESP_E AtCmd_APCLIENTINFO(void);
+
+ATCMD_RESP_E AtCmd_TCERTADD( char* name, int format, int location, File fp );
+ATCMD_RESP_E AtCmd_SETTIME(char* time);
+ATCMD_RESP_E AtCmd_SSLCONF(int size);
+ATCMD_RESP_E AtCmd_LOGLVL(int level);
+
+ATCMD_RESP_E AtCmd_RecieveMQTTData( String& topic );
 
 #endif /* _GS_ATCMD_H_ */
 

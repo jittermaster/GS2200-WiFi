@@ -1553,6 +1553,104 @@ ATCMD_RESP_E AtCmd_MQTTPUBLISH( char cid, ATCMD_MQTTparams mqtt )
 	return resp;
 }
 
+/*---------------------------------------------------------------------------*
+ * AtCmd_MQTTSUBSCRIBE
+ *---------------------------------------------------------------------------*
+ * Description: Send MQTT application message
+ * Inputs: char cid -- Connection ID of MQTT
+ *         char *topic -- TOPIC on MQTT broker
+ *         ATCMD_MQTTparams mqtt -- structure of {length, QoS, retain, message}
+ * Note: Only ASCII message is supported
+ *---------------------------------------------------------------------------*/
+ATCMD_RESP_E AtCmd_MQTTSUBSCRIBE( char cid, ATCMD_MQTTparams mqtt )
+{
+	#define BUFLEN 180
+
+	char cmd[BUFLEN];
+	ATCMD_RESP_E resp=ATCMD_RESP_UNMATCH;
+	SPI_RESP_STATUS_E s;
+
+
+	if( strlen(mqtt.topic) < BUFLEN - 28 ){
+		sprintf( cmd, "AT+MQTTSUBSCRIBE=%c,%s,%d\r\n", cid, mqtt.topic, mqtt.QoS );
+		if( ATCMD_RESP_OK == AtCmd_SendCommand( cmd ) ){
+			if( s == SPI_RESP_STATUS_OK )
+				resp = ATCMD_RESP_OK;
+			else
+				resp = ATCMD_RESP_SPI_ERROR;
+
+			return resp;
+		}
+	}
+	else
+		return ATCMD_RESP_INPUT_TOO_LONG;
+
+	return resp;
+}
+
+/*---------------------------------------------------------------------------*
+ * AtCmd_RecieveMQTTData
+ *---------------------------------------------------------------------------*
+ * Description: Recieve MQTT Subscribed data
+ * Inputs: String& data -- MQTT Subscribed data
+ *---------------------------------------------------------------------------*/
+ATCMD_RESP_E  AtCmd_RecieveMQTTData( String& data )
+{
+	SPI_RESP_STATUS_E s;
+	ATCMD_RESP_E resp;
+	uint16_t rxDataLen;
+
+	/* Reset the message ID */
+	resp = ATCMD_RESP_UNMATCH;
+
+	s = WiFi_Read( RxBuffer, &rxDataLen );
+
+	if( s == SPI_RESP_STATUS_TIMEOUT ){
+#ifdef ATCMD_DEBUG_ENABLE
+		ConsoleLog("SPI: Timeout");
+#endif
+		return ATCMD_RESP_TIMEOUT;
+	}
+
+	if( s == SPI_RESP_STATUS_ERROR ){
+#ifdef ATCMD_DEBUG_ENABLE
+		/* Zero data length, this should not happen */
+		ConsoleLog("GS2200 responds Zero data length");
+#endif
+		return ATCMD_RESP_ERROR;
+	}
+
+	char* p = RxBuffer;
+	while( rxDataLen-- ){
+		/* Parse the received data */
+		resp = AtCmd_ParseRcvData( p++ );
+	}
+
+
+	if(resp == ATCMD_RESP_DISCONNECT ){
+		return resp;
+	}
+
+	String rxdata = RxBuffer;
+	String size = rxdata.substring( (1+1+1+1+4), (1+1+1+1+4+4) );
+	String topic = rxdata.substring( (1+1+1+1+4+4), rxdata.indexOf(' ') );
+	data = rxdata.substring( rxdata.indexOf(' ')+1, rxdata.indexOf(' ')+1+size.toInt() );
+
+#ifdef ATCMD_DEBUG_ENABLE
+
+	Serial.println();
+	Serial.print("Recieve topic: ");
+ 	Serial.println(topic);
+	Serial.print("Recieve size: ");
+	Serial.println(size);
+	Serial.print("Recieve data: ");
+	Serial.println(data);
+
+#endif
+
+	return ATCMD_RESP_OK;
+
+}
 
 /*---------------------------------  HTTP Communication  --------------------------------------*/
 
@@ -1782,6 +1880,82 @@ ATCMD_RESP_E AtCmd_APCLIENTINFO(void)
 		}
 	}
 
+	return resp;
+}
+
+/*---------------------------------------------------------------------------*
+ * AtCmd_TCERTADD
+ *---------------------------------------------------------------------------*/
+ATCMD_RESP_E AtCmd_TCERTADD( char* name, int format, int location, File fp )
+{
+	ATCMD_RESP_E resp=ATCMD_RESP_UNMATCH;
+	SPI_RESP_STATUS_E s;
+	char cmd[80];
+	char *result;
+	
+	if (!fp.available())
+		return ATCMD_RESP_INVALID_INPUT;
+
+	
+	if( fp.size() < TXBUFFER_SIZE - 2 ){
+		sprintf( cmd, "AT+TCERTADD=%s,%d,%d,%d\r\n", name, format, fp.size(), location );
+		if( ATCMD_RESP_OK == AtCmd_SendCommand( cmd ) ){
+			TxBuffer[0] = ATCMD_ESC;
+			TxBuffer[1] = 'W';
+			fp.read(&TxBuffer[2], fp.size());
+			s = WiFi_Write( (char *)TxBuffer, fp.size()+2 );
+
+			if( s == SPI_RESP_STATUS_OK ){
+		    	puts("ATCMD_RESP_OK");
+				resp = ATCMD_RESP_OK;
+			}else{
+		    	puts("ATCMD_RESP_SPI_ERROR");
+				resp = ATCMD_RESP_SPI_ERROR;
+			}
+			return resp;
+		}
+	} else {
+		puts("ATCMD_RESP_INPUT_TOO_LONG");
+		return ATCMD_RESP_INPUT_TOO_LONG;
+	}
+
+	return AtCmd_RecvResponse();
+
+}
+
+/*---------------------------------------------------------------------------*
+ * AtCmd_SETTIME
+ *---------------------------------------------------------------------------*/
+ATCMD_RESP_E AtCmd_SETTIME(char* time)
+{
+	ATCMD_RESP_E resp=ATCMD_RESP_UNMATCH;
+	char cmd[80];
+    sprintf( cmd, "AT+SETTIME=%s\r\n", time );
+	resp = AtCmd_SendCommand( cmd );
+	return resp;
+}
+
+/*---------------------------------------------------------------------------*
+ * AtCmd_SSLCONF
+ *---------------------------------------------------------------------------*/
+ATCMD_RESP_E AtCmd_SSLCONF(int size)
+{
+	ATCMD_RESP_E resp=ATCMD_RESP_UNMATCH;
+	char cmd[80];
+    sprintf( cmd, "AT+SSLCONF=1,%d\r\n", size );
+	resp = AtCmd_SendCommand( cmd );
+	return resp;
+}
+
+/*---------------------------------------------------------------------------*
+ * AtCmd_LOGLVL
+ *---------------------------------------------------------------------------*/
+ATCMD_RESP_E AtCmd_LOGLVL(int level)
+{
+	ATCMD_RESP_E resp=ATCMD_RESP_UNMATCH;
+	char cmd[80];
+    sprintf( cmd, "AT+LOGLVL=%d\r\n", level );
+	resp = AtCmd_SendCommand( cmd );
 	return resp;
 }
 
