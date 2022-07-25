@@ -1693,6 +1693,46 @@ ATCMD_RESP_E AtCmd_HTTPOPEN( char *cid, const char *host, const char *port )
 	return resp;
 }
 
+/*---------------------------------------------------------------------------*
+ * AtCmd_HTTPSOPEN
+ *---------------------------------------------------------------------------*
+ * Description: Open an HTTPS client connection
+ * Inputs: char *cid -- Connection ID is stored, if connection established
+ *         char *host -- HTTP server name or IP address
+ *         char *port -- HTTP port number
+ *         const char *port -- CA Name
+ *---------------------------------------------------------------------------*/
+ATCMD_RESP_E AtCmd_HTTPSOPEN( char *cid, const char *host, const char *port, const char *ca_name)
+{
+	ATCMD_RESP_E resp=ATCMD_RESP_UNMATCH;
+	char cmd[80];
+	char *result;
+	
+	sprintf( cmd, "AT+HTTPOPEN=%s,%s,1,%s\r\n", host, port,ca_name );
+	resp = AtCmd_SendCommand( cmd );
+
+	if( resp == ATCMD_RESP_OK && RespBuffer_Index ) {
+		if( (result = strstr( (const char*)RespBuffer[0], "IP")) != NULL) {
+			/* CID must be in the second line of the response */
+			*cid = Search_CID( RespBuffer[1] );
+#ifdef ATCMD_DEBUG_ENABLE
+			ConsolePrintf( "HTTP Server CID: %c\r\n", *cid );
+			ConsolePrintf( "HTTP Server IP Address: %s\r\n", result+3 );
+#endif    
+		}
+		else{
+			/* IP address is provided */
+			/* CID must be in the first line of the response */
+			*cid = Search_CID( RespBuffer[0] );
+		}
+	}
+
+	if( *cid == ATCMD_INVALID_CID )
+		resp = ATCMD_RESP_INVALID_CID;
+
+	return resp;
+}
+
 
 /*---------------------------------------------------------------------------*
  * AtCmd_HTTPCONF

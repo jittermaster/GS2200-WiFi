@@ -253,6 +253,7 @@ ATCMD_RESP_E AtCmd_MQTTCONNECT( char *cid, char *host, char *port, char *clientI
 ATCMD_RESP_E AtCmd_MQTTPUBLISH( char cid, ATCMD_MQTTparams mqttparams );
 ATCMD_RESP_E AtCmd_MQTTSUBSCRIBE( char cid, ATCMD_MQTTparams mqttparams );
 ATCMD_RESP_E AtCmd_HTTPOPEN( char *cid, const char *host, const char *port );
+ATCMD_RESP_E AtCmd_HTTPSOPEN( char *cid, const char *host, const char *port, const char *ca_name );
 ATCMD_RESP_E AtCmd_HTTPCONF( ATCMD_HTTP_HEADER_E param, const char *val );
 ATCMD_RESP_E AtCmd_HTTPSEND( char cid, ATCMD_HTTP_METHOD_E type, uint8_t timeout, const char *page, const char *msg, uint32_t size );
 ATCMD_RESP_E AtCmd_HTTPCLOSE( char cid );
