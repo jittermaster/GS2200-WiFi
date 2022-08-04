@@ -34,7 +34,7 @@
 #define NUM_OF_RESPBUFFER  32
 #define WS_MAXENTRIES      (NUM_OF_RESPBUFFER - 1)
 
-#define ATCMD_DEBUG_ENABLE
+//#define ATCMD_DEBUG_ENABLE
 
 
 /*-------------------------------------------------------------------------*
@@ -1235,6 +1235,7 @@ ATCMD_RESP_E AtCmd_ParseRcvData(uint8_t *ptr)
 		else{
 			/* Now read actual data */
 			WiFi_StoreESCBuffer( *ptr );
+			resp = ATCMD_RESP_BULK_DATA_RX;
 			dataLen--;
 			if( !dataLen ){
 				rcv_state = ATCMD_FSM_START;

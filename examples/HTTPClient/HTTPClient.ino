@@ -50,7 +50,8 @@ void parse_httpresponse(char *message)
 	char *p;
 	
 	if( (p=strstr( message, "200 OK\r\n" )) != NULL ){
-		ConsolePrintf( "Response : %s\r\n", p+8 );
+//		ConsolePrintf( "Response : %s\r\n", p+8 );
+    ConsolePrintf( "Response : %s", p+8 );
 	}
 }
 
@@ -189,8 +190,12 @@ void loop() {
 			while(1){
 				if( Get_GPIO37Status() ){
 					resp = AtCmd_RecvResponse();
-					if( ATCMD_RESP_OK == resp ){
+					if( ATCMD_RESP_OK != resp ){
+						ConsolePrintf( "%s", (char *)(ESCBuffer+1) );
+						WiFi_InitESCBuffer();
+					else{
 						// AT+HTTPSEND command is done
+						ConsolePrintf( "\r\n");
 						break;
 					}
 				}

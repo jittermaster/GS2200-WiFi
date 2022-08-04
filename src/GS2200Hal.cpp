@@ -336,7 +336,7 @@ SPI_RESP_STATUS_E WiFi_Read(uint8_t *rxData, uint16_t *rxDataLen)
 		return SPI_RESP_STATUS_ERROR;
 	}
 	// Read Data Header
-	Read_HeaderResponse(spiHeader);       
+	Read_HeaderResponse(spiHeader); 
 	
 	// Read data from GS2200
 	Read_Data( rxData, *rxDataLen );
@@ -434,7 +434,7 @@ void ConsoleByteSend(uint8_t data)
 }
 
 
-#define PRINTFBUFFER 1024
+#define PRINTFBUFFER 2048
 void ConsolePrintf( const char *fmt, ...)
 {
         char buf[PRINTFBUFFER]; // resulting string limited to 128 chars

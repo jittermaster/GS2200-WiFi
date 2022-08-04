@@ -21,6 +21,7 @@
 #include "config.h"
 
 #include <SDHCI.h>
+#include <RTC.h>
 
 #define  CONSOLE_BAUDRATE  115200
 
@@ -61,6 +62,10 @@ void setup() {
 	while (!theSD.begin()) {
 		; /* wait until SD card is mounted. */
 	}
+ 
+  RTC.begin();
+  RtcTime compiledDateTime(__DATE__, __TIME__);
+  RTC.setTime(compiledDateTime);
 
 	/* initialize digital pin LED_BUILTIN as an output. */
 	pinMode(LED0, OUTPUT);
@@ -110,7 +115,10 @@ void loop() {
 	AtCmd_TCERTADD("TLS_CA", 0, 1, rootCertsFile); 
 	rootCertsFile.close();
 
-	AtCmd_SETTIME("__DATE__, __TIME__");
+  char time_string[128];
+  RtcTime rtc = RTC.getTime();
+  sprintf(time_string,"%02d/%02d/%04d,%02d:%02d:%02d",rtc.day(),rtc.month(),rtc.year(),rtc.hour(),rtc.minute(),rtc.second());
+  AtCmd_SETTIME(time_string);
 	AtCmd_SSLCONF(100);
 	AtCmd_LOGLVL(2);
 
