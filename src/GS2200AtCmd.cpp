@@ -789,7 +789,7 @@ ATCMD_RESP_E AtCmd_NCTCP( const char *destAddress, const char *port, char *cid)
  *         char *srcPort -- Client port string
  *         uint8_t *cid -- Client CID
  *---------------------------------------------------------------------------*/
-ATCMD_RESP_E AtCmd_NCUDP(char *destAddress, char *port, char *srcPort, uint8_t *cid )
+ATCMD_RESP_E AtCmd_NCUDP(char *destAddress, char *port, char *srcPort, char *cid )
 {
 	char cmd[60];
 	ATCMD_RESP_E  resp;
