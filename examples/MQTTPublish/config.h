@@ -1,6 +1,5 @@
 /*
- *  AppFunc.h - GS2200 Application Header
- *  Copyright 2019 Norikazu Goto
+ *  config.h - WiFi Configration Header
  *
  *  This work is free software; you can redistribute it and/or modify it under the terms 
  *  of the GNU Lesser General Public License as published by the Free Software Foundation; 
@@ -15,16 +14,18 @@
  *  Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
 */
 
-#ifndef _GS_APPS_H_
-#define _GS_APPS_H_
-#define  APPS_VERSION            "1.0.0"
+#ifndef _CONFIG_H_
+#define _CONFIG_H_
 
 /*-------------------------------------------------------------------------*
- * Function ProtoTypes:
+ * Configration
  *-------------------------------------------------------------------------*/
-void App_InitModule(void);
-void App_ConnectAP(void);
-void App_TCPClient_Test(void);
+#define  AP_SSID        "AP_SSID_NAME"
+#define  PASSPHRASE     "123456789"
 
+#define  MQTT_SRVR     "test.mosquitto.org"
+#define  MQTT_PORT     "1883"
+#define  MQTT_CLI_ID   "Telit_Device_pub"
+#define  MQTT_TOPIC    "Telit/property"
 
-#endif
+#endif /*_CONFIG_H_*/
