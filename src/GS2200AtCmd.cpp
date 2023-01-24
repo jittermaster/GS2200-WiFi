@@ -1924,6 +1924,7 @@ ATCMD_RESP_E AtCmd_APCLIENTINFO(void)
 	return resp;
 }
 
+#ifndef SUBCORE
 /*---------------------------------------------------------------------------*
  * AtCmd_TCERTADD
  *---------------------------------------------------------------------------*/
@@ -1963,6 +1964,7 @@ ATCMD_RESP_E AtCmd_TCERTADD( char* name, int format, int location, File fp )
 	return AtCmd_RecvResponse();
 
 }
+#endif 
 
 /*---------------------------------------------------------------------------*
  * AtCmd_SETTIME

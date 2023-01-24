@@ -18,7 +18,9 @@
 #ifndef _GS_ATCM_H_
 #define _GS_ATCM_H_
 
+#ifndef SUBCORE
 #include "File.h"
+#endif
 
 #define ATCMD_INVALID_CID            0xFF  /* invalid CID */
 
@@ -260,7 +262,9 @@ ATCMD_RESP_E AtCmd_HTTPCLOSE( char cid );
 ATCMD_RESP_E AtCmd_DNSLOOKUP( char *host, char *ip );
 ATCMD_RESP_E AtCmd_APCLIENTINFO(void);
 
+#ifndef SUBCORE
 ATCMD_RESP_E AtCmd_TCERTADD( char* name, int format, int location, File fp );
+#endif
 ATCMD_RESP_E AtCmd_SETTIME(char* time);
 ATCMD_RESP_E AtCmd_SSLCONF(int size);
 ATCMD_RESP_E AtCmd_LOGLVL(int level);
