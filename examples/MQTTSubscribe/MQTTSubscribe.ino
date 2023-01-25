@@ -17,38 +17,44 @@
 
 #include <GS2200Hal.h>
 #include <GS2200AtCmd.h>
-#include "AppFunc.h"
-
-extern uint8_t ESCBuffer[];
-extern uint32_t ESCBufferCnt;
+#include <TelitWiFi.h>
+#include "config.h"
 
 #define  CONSOLE_BAUDRATE  115200
 
-#define  MQTT_SRVR     "test.mosquitto.org"
-#define  MQTT_PORT     "1883"
-#define  MQTT_CLI_ID   "Telit_Device_pub"
-#define  MQTT_TOPIC    "Telit/property"
-
+/*-------------------------------------------------------------------------*
+ * Globals:
+ *-------------------------------------------------------------------------*/
+TelitWiFi gs2200;
+TWIFI_Params gsparams;
 
 // the setup function runs once when you press reset or power the board
 void setup() {
-
 	/* initialize digital pin LED_BUILTIN as an output. */
 	pinMode(LED0, OUTPUT);
 	digitalWrite( LED0, LOW );   // turn the LED off (LOW is the voltage level)
 	Serial.begin( CONSOLE_BAUDRATE ); // talk to PC
 
-	/* Initialize SPI access of GS2200 */
-	Init_GS2200_SPI();
-
-	digitalWrite( LED0, HIGH ); // turn on LED
-
 	/* Initialize AT Command Library Buffer */
 	AtCmd_Init();
+	/* Initialize SPI access of GS2200 */
+	Init_GS2200_SPI_type(iS110B_TypeC);
+
+	/* Initialize AT Command Library Buffer */
+	gsparams.mode = ATCMD_MODE_STATION;
+	gsparams.psave = ATCMD_PSAVE_DEFAULT;
+	if (gs2200.begin(gsparams)) {
+		ConsoleLog("GS2200 Initilization Fails");
+		while(1);
+	}
 
 	/* GS2200 Association to AP */
-	App_InitModule();
-	App_ConnectAP();
+	if (gs2200.activate_station(AP_SSID, PASSPHRASE)) {
+		ConsoleLog("Association Fails");
+		while(1);
+	}
+
+	digitalWrite( LED0, HIGH ); // turn on LED
 }
 
 char server_cid = 0;
@@ -83,7 +89,6 @@ void loop() {
 		do {
 			resp = AtCmd_NSTAT(&networkStatus);
 		} while (ATCMD_RESP_OK != resp);
-		
 		served = true;
 	}
 	else {
