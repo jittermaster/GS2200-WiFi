@@ -17,7 +17,7 @@
 
 #include <GS2200Hal.h>
 #include <GS2200AtCmd.h>
-#include "AppFunc.h"
+#include <TelitWiFi.h>
 #include "config.h"
 #include <Audio.h>
 #include <LowPower.h>
@@ -26,10 +26,15 @@ AudioClass *theAudio;
 
 #define  CONSOLE_BAUDRATE  115200
 
+/*-------------------------------------------------------------------------*
+ * Globals:
+ *-------------------------------------------------------------------------*/
+TelitWiFi gs2200;
+TWIFI_Params gsparams;
 char server_cid = 0;
 char TCP_Data[]=RADIO_SITE;
 
-uint8_t* ESCBuffer_p;
+extern uint8_t* ESCBuffer_p;
 extern uint8_t ESCBuffer[];
 extern uint32_t ESCBufferCnt;
 
@@ -54,14 +59,13 @@ static void audio_attention_cb(const ErrorAttentionParam *atprm)
 	puts("Attention!");
   
 	//if (atprm->error_code > AS_ATTENTION_CODE_WARNING)
-	if (atprm->error_att_sub_code == AS_ATTENTION_SUB_CODE_SIMPLE_FIFO_UNDERFLOW)
-	{
+	if (atprm->error_att_sub_code == AS_ATTENTION_SUB_CODE_SIMPLE_FIFO_UNDERFLOW) {
 		state = E_Stop;
 		digitalWrite( LED2, HIGH ); // turn off LED
 		digitalWrite( LED3, HIGH ); // turn on LED
-	}else if(atprm->error_att_sub_code == AS_ATTENTION_SUB_CODE_DSP_EXEC_ERROR){
+	} else if (atprm->error_att_sub_code == AS_ATTENTION_SUB_CODE_DSP_EXEC_ERROR) {
 		// Don't Care.
-	}else{
+	} else {
 		LowPower.reboot();
 	}
 }
@@ -78,8 +82,10 @@ void setup() {
 	digitalWrite( LED0, LOW );   // turn the LED off (LOW is the voltage level)
 	Serial.begin( CONSOLE_BAUDRATE ); // talk to PC
 
+	/* Initialize AT Command Library Buffer */
+	AtCmd_Init();
 	/* Initialize SPI access of GS2200 */
-	Init_GS2200_SPI();
+	Init_GS2200_SPI_type(iS110B_TypeC);
 
 	digitalWrite( LED0, HIGH ); // turn on LED
   
@@ -89,26 +95,64 @@ void setup() {
 	puts("initialization Audio Library");
 	theAudio->setPlayerMode(AS_SETPLAYER_OUTPUTDEVICE_SPHP, AS_SP_DRV_MODE_4DRIVER);
 	err_t err = theAudio->initPlayer(AudioClass::Player0, AS_CODECTYPE_MP3, "/mnt/sd0/BIN", AS_SAMPLINGRATE_AUTO, AS_CHANNEL_STEREO);
+	/* Verify player initialize */
+  if (err != AUDIOLIB_ECODE_OK) {
+    printf("Player0 initialize error\n");
+    exit(1);
+  }
 	puts("initialization Player Library");
 	
 	theAudio->setVolume(-160);
 	
-	/* WiFi Module Initialize */
-	App_InitModule();
-	App_ConnectAP();
+	/* Initialize AT Command Library Buffer */
+	gsparams.mode = ATCMD_MODE_STATION;
+	gsparams.psave = ATCMD_PSAVE_DEFAULT;
+	if (gs2200.begin(gsparams)) {
+		ConsoleLog("GS2200 Initilization Fails");
+		while(1);
+	}
+
+	/* GS2200 Association to AP */
+	if (gs2200.activate_station(AP_SSID, PASSPHRASE)) {
+		ConsoleLog("Association Fails");
+		while(1);
+	}
 	
 	digitalWrite( LED0, LOW );  // turn off LED
 	digitalWrite( LED1, HIGH ); // turn on LED
-	
 }
 
 /**------------------------------------------------------------------------
  * Start process for web radio
  */
 void start_radio() {
-	do{
-		server_cid = App_ConnectWeb();
-	}while(server_cid == ATCMD_INVALID_CID);
+	ATCMD_RESP_E resp = ATCMD_RESP_UNMATCH;
+	server_cid = ATCMD_INVALID_CID;
+	ATCMD_NetworkStatus networkStatus;
+
+	do {
+		// Start a TCP client
+		ConsoleLog( "Start TCP Client");
+		resp = AtCmd_NCTCP( (char *)RADIO_IP, (char *)RADIO_PORT, &server_cid);
+		if (resp != ATCMD_RESP_OK) {
+			ConsoleLog( "No Connect!" );
+			delay(2000);
+			continue;
+		}
+
+		if (server_cid == ATCMD_INVALID_CID) {
+			ConsoleLog( "No CID!" );
+			delay(2000);
+			continue;
+		}
+
+		do {
+			resp = AtCmd_NSTAT(&networkStatus);
+		} while (ATCMD_RESP_OK != resp);
+		ConsoleLog( "Connected" );
+		ConsolePrintf("IP: %d.%d.%d.%d\r\n",
+						networkStatus.addr.ipv4[0], networkStatus.addr.ipv4[1], networkStatus.addr.ipv4[2], networkStatus.addr.ipv4[3]);
+	} while (server_cid == ATCMD_INVALID_CID);
 	
 	digitalWrite( LED1, LOW );  // turn off LED
 	digitalWrite( LED2, HIGH ); // turn on LED
@@ -119,11 +163,11 @@ void start_radio() {
  */
 void write_StartRadio(uint8_t* pt, uint32_t sz)
 {
-	while(sz > 3){
-		if( ('\r' == *(pt)) &&
+	while (sz > 3) {
+		if (('\r' == *(pt)) &&
 		    ('\n' == *(pt+1)) &&
 		    ('\r' == *(pt+2)) &&
-		    ('\n' == *(pt+3)) ){
+		    ('\n' == *(pt+3))) {
 			state = E_AudioStart;
 			pt = pt+3;
 			sz = sz-3;
@@ -133,7 +177,7 @@ void write_StartRadio(uint8_t* pt, uint32_t sz)
 		pt++;
 		sz--;
 	}
-	if(state == E_AudioStart){
+	if (state == E_AudioStart) {
 		write_StartAudio(pt, sz);
 	}
 }
@@ -164,7 +208,7 @@ void write_StartAudio(uint8_t* pt, uint32_t sz)
 void write_Run(uint8_t* pt, uint32_t sz)
 {
 	err_t err = AUDIOLIB_ECODE_SIMPLEFIFO_ERROR;
-	while(err == AUDIOLIB_ECODE_SIMPLEFIFO_ERROR){
+	while (err == AUDIOLIB_ECODE_SIMPLEFIFO_ERROR) {
 		err = theAudio->writeFrames(AudioClass::Player0, pt, sz);
 		usleep(10000);
 	}
@@ -180,25 +224,27 @@ static int es_reader(int argc, FAR char *argv[])
 	(void)argc;
 	(void)argv;
 	
-	while(1){
+	while(1) {
+	  /*Wait for data.*/
+    // puts("loop");
+    for (int i= 200;Get_GPIO37Status()==0;i--) {
+      if (i==0) {
+        puts("LowPower.reboot");
+        LowPower.reboot();
+      }
+      usleep(10000);
+    }
 		
-		/*Wait for data.*/
-		//  puts("loop");
-		for( int i= 200;Get_GPIO37Status()==0;i--){
-			if(i==0) {LowPower.reboot();}
-			usleep(10000);
-		}
-		
-		while( Get_GPIO37Status() ){
+		while (Get_GPIO37Status()) {
 			resp = AtCmd_RecvResponse();
 			
-			if( ATCMD_RESP_BULK_DATA_RX == resp ){
-				if( Check_CID( server_cid ) ){
+			if (ATCMD_RESP_BULK_DATA_RX == resp) {
+				if (Check_CID(server_cid)) {
 					
 					ESCBuffer_p = ESCBuffer+1;
 					ESCBufferCnt = ESCBufferCnt -1;
 					
-					switch(state){
+					switch (state) {
 					case E_RadioStart:
 						write_StartRadio(ESCBuffer_p, ESCBufferCnt);
 						break;
@@ -213,6 +259,8 @@ static int es_reader(int argc, FAR char *argv[])
 						state = E_AudioStart;
 						digitalWrite( LED3, LOW );  // turn off LED
 						digitalWrite( LED2, HIGH ); // turn on LED
+            puts("error!");
+            exit(1);
 						break;
 					default:
 						puts("error!");
@@ -223,7 +271,6 @@ static int es_reader(int argc, FAR char *argv[])
 			}
 		}
 	}
-	
 }
 
 /**------------------------------------------------------------------------
@@ -238,7 +285,7 @@ void loop() {
 	WiFi_InitESCBuffer();
 
 	// Connect Net Radio server
-	if( ATCMD_RESP_OK != AtCmd_SendBulkData( server_cid, TCP_Data, strlen(TCP_Data) ) ){
+	if (ATCMD_RESP_OK != AtCmd_SendBulkData(server_cid, TCP_Data, strlen(TCP_Data))) {
 		// Data is not sent, we need to re-send the data
 		ConsoleLog( "Send Error.");
 		delay(1);
@@ -247,7 +294,7 @@ void loop() {
 	puts(RADIO_NAME);
 	task_create("es_reader", 155, 1024, es_reader, NULL);
 	
-	while(1){
+	while (1) {
 		sleep(10000);
 	}
 }
