@@ -15,8 +15,6 @@
  *  Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
 */
 
-#include <GS2200Hal.h>
-#include <GS2200AtCmd.h>
 #include <TelitWiFi.h>
 #include "config.h"
 
@@ -24,12 +22,14 @@
 /*-------------------------------------------------------------------------*
  * Globals:
  *-------------------------------------------------------------------------*/
-extern uint8_t ESCBuffer[];
-extern uint32_t ESCBufferCnt;
 TelitWiFi gs2200;
 TWIFI_Params gsparams;
-char UDP_Data[] = "GS2200 UDP Client Data Transfer Test.";
+
+const uint8_t UDP_Data[] = "GS2200 UDP Client Data Transfer Test.";
 const uint16_t UDP_PACKET_SIZE = 37; 
+
+const uint16_t UDP_RECEIVE_PACKET_SIZE = 1500; 
+uint8_t UDP_Receive_Data[UDP_RECEIVE_PACKET_SIZE] = {0};
 
 /*-------------------------------------------------------------------------*
  * Function ProtoTypes:
@@ -128,72 +128,49 @@ void setup() {
 
 // the loop function runs over and over again forever
 void loop() {
-	ATCMD_RESP_E resp;
 	char server_cid = 0;
 	bool served = false;
 	uint32_t timer = 0;
+  int receive_size = 0;
 	while (1) {
 		if (!served) {
-			ATCMD_NetworkStatus networkStatus;
-			resp = ATCMD_RESP_UNMATCH;
-
 			ConsoleLog("Start UDP Client");
-			resp = AtCmd_NCUDP((char *)UDPSRVR_IP, (char *)UDPSRVR_PORT, (char *)LocalPort, &server_cid);   // Create UDP Client; AT+NCUDP=<Dest-Address>,<Port>[<,Src-Port>]
+			// Create UDP Client
+      server_cid = gs2200.connectUDP(UDPSRVR_IP, UDPSRVR_PORT, LocalPort);
 			ConsolePrintf("server_cid: %d \r\n", server_cid);
-
-			if (resp != ATCMD_RESP_OK) {
-				ConsoleLog("No Connect!");
-				delay(2000);
-				continue;
-			}
 			if (server_cid == ATCMD_INVALID_CID) {
-				ConsoleLog("No CID!");
-				delay(2000);
 				continue;
 			}
-
-			do {
-				resp = AtCmd_NSTAT(&networkStatus);         // AT+NSTAT=?
-			} while (ATCMD_RESP_OK != resp);
-
-			ConsoleLog("Connected");
-			ConsolePrintf("IP: %d.%d.%d.%d\r\n\r\n",
-						networkStatus.addr.ipv4[0], networkStatus.addr.ipv4[1], networkStatus.addr.ipv4[2], networkStatus.addr.ipv4[3]);
-
 			served = true;
 		}
 		else {
 			ConsoleLog("Start to send UDP Data");
-
 			// Prepare for the next chunck of incoming data
 			WiFi_InitESCBuffer();
-
 			ConsolePrintf("\r\n");
 
 			while (1) {
-				AtCmd_SendBulkData(server_cid, UDP_Data, UDP_PACKET_SIZE);
+        gs2200.write(server_cid, UDP_Data, UDP_PACKET_SIZE);
 
-				resp = AtCmd_RecvResponse();  // Description: Wait for a response after sending a command. Keep parsing the data until a response is found.
+        // Description: Wait for a response after sending a command. Keep parsing the data until a response is found.
+        receive_size = gs2200.read(server_cid, UDP_Receive_Data, UDP_RECEIVE_PACKET_SIZE);
+        if (0 < receive_size) {
+          ConsolePrintf("%d byte Recieved successfully. \r\n", receive_size);
+          for (int i = 0; i < receive_size; i++) {
+            ConsolePrintf("%c", UDP_Receive_Data[i]);
+          }
+          ConsolePrintf("\r\n");
+          
+          memset(UDP_Receive_Data, 0, UDP_RECEIVE_PACKET_SIZE);
+          WiFi_InitESCBuffer();
+          delay(100);
+        }
 
-				if (ATCMD_RESP_BULK_DATA_RX == resp) {          
-					if (Check_CID(server_cid)) {
-						ConsolePrintf("%d byte Recieved successfully. \r\n", ESCBufferCnt);
-
-						for (int i = 1; i < ESCBufferCnt; i++) {
-							ConsolePrintf("%c", ESCBuffer[i]);
-						}
-						ConsolePrintf("\r\n");
-					}
-					WiFi_InitESCBuffer();
-
-					delay(100);
-				}
-
-				if (msDelta(timer) > 100) {
-					timer = millis();
-					led_effect();
-				}
-			}
-		}
-	}
+        if (msDelta(timer) > 100) {
+          timer = millis();
+          led_effect();
+        }
+      }
+    }
+  }
 }

@@ -65,6 +65,10 @@ public:
 	char connect(const String& ip, const String& port);
 
 	/**
+	 * Connect UDP server
+	 */
+	char connectUDP(const String& ip, const String& port, const String& srcPort);
+	/**
 	 * Connect TCP server
 	 */
 	bool connected(char cid);
@@ -77,7 +81,7 @@ public:
 	/**
 	 * Send data to TCP server
 	 */
-	bool write(char cid, const uint8_t* data, int length);
+	bool write(char cid, const uint8_t* data, uint16_t length);
 
 	/**
 	 *  Available TCP read

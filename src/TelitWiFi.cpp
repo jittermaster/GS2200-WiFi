@@ -23,6 +23,12 @@ extern uint32_t ESCBufferCnt;
 
 #define CMD_TIMEOUT 10000
 
+// #define GS2200_DEBUG
+#ifdef GS2200_DEBUG
+#define gs2200_printf printf
+#else
+#define gs2200_printf(...) do {} while (0)
+#endif
 
 TelitWiFi::TelitWiFi()
 {
@@ -239,6 +245,48 @@ char TelitWiFi::connect(const String& ip, const String& port)
 }
 
 /**
+ * @brief Connect UDP server
+ * @param const String& ip - IN: IP
+ *        const String& port - IN: Port
+ * 				const String& srcPort - IN: srcPort
+ * @return char cid: Channel ID
+ */
+char TelitWiFi::connectUDP(const String& ip, const String& port, const String& srcPort)
+{
+	ATCMD_RESP_E resp;
+	char cid = ATCMD_INVALID_CID;
+	ATCMD_NetworkStatus networkStatus;
+
+	resp = ATCMD_RESP_UNMATCH;
+	ConsoleLog( "Start UDP Client");
+	WiFi_InitESCBuffer();
+
+	resp = AtCmd_NCUDP( String(ip).c_str(), String(port).c_str(), String(srcPort).c_str(), &cid);
+
+	if (resp != ATCMD_RESP_OK) {
+		ConsoleLog( "No Connect!" );
+		delay(2000);
+		return cid;
+	}
+
+	if (cid == ATCMD_INVALID_CID) {
+		ConsoleLog( "No CID!" );
+		delay(2000);
+		return cid;
+	}
+
+	do {
+		resp = AtCmd_NSTAT(&networkStatus);
+	} while (ATCMD_RESP_OK != resp);
+
+	ConsoleLog( "Connected" );
+	ConsolePrintf("IP: %d.%d.%d.%d\r\n",
+	              networkStatus.addr.ipv4[0], networkStatus.addr.ipv4[1], networkStatus.addr.ipv4[2], networkStatus.addr.ipv4[3]);
+	return cid;
+
+}
+
+/**
  * @brief Connect TCP server
  * @param char cid: Channel ID
  * 
@@ -288,11 +336,11 @@ bool TelitWiFi::connected(char cid)
  *        const int length - IN: data size
  * 
  */
-bool TelitWiFi::write(char cid, const uint8_t* data, int length)
+bool TelitWiFi::write(char cid, const uint8_t* data, uint16_t length)
 {
 	if( ATCMD_RESP_OK != AtCmd_SendBulkData( cid, data, length )){
 		// Data is not sent, we need to re-send the data
-		ConsoleLog( "Send Error.");
+		gs2200_printf( "Send Error.");
 		return false;
 	}
 
@@ -310,24 +358,21 @@ int TelitWiFi::read(char cid, uint8_t* data, int length)
 	int size = -1;
 	ATCMD_RESP_E resp;
 
-	if( Get_GPIO37Status() ) {
+	resp = AtCmd_RecvResponse();
 
-		resp = AtCmd_RecvResponse();
-
-		if( ATCMD_RESP_BULK_DATA_RX == resp ){
-			if( Check_CID( cid ) ){
-				size = ESCBufferCnt-1;
-				if(size > length){
-					size = length;
-					ConsoleLog( "Lost some data.");
-				}
-				memcpy(data,(ESCBuffer-1),size);
-			}else{
-				ConsoleLog( "Missmatch cid.");
+	if( ATCMD_RESP_BULK_DATA_RX == resp ){
+		if( Check_CID( cid ) ){
+			size = ESCBufferCnt-1;
+			if(size > length){
+				size = length;
+				ConsoleLog( "Lost some data.");
 			}
+			memcpy(data,(ESCBuffer + 1),size);
 		}else{
-			ConsoleLog( "Recieve another event.");
+			ConsoleLog( "Missmatch cid.");
 		}
+	}else{
+		gs2200_printf( "Recieve another event.");
 	}
 
 	return size;
