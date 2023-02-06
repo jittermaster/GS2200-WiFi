@@ -15,8 +15,6 @@
  *  Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
 */
 
-#include <GS2200Hal.h>
-#include <GS2200AtCmd.h>
 #include <TelitWiFi.h>
 #include "config.h"
 
@@ -24,10 +22,10 @@
 /*-------------------------------------------------------------------------*
  * Globals:
  *-------------------------------------------------------------------------*/
-char TCP_Data[] = "GS2200 TCP Client Data Transfer Test.";
+const uint8_t TCP_Data[] = "GS2200 TCP Client Data Transfer Test.";
+const uint16_t TCP_RECEIVE_PACKET_SIZE = 1500;
+uint8_t TCP_Receive_Data[TCP_RECEIVE_PACKET_SIZE] = {0};
 
-extern uint8_t ESCBuffer[];
-extern uint32_t ESCBufferCnt;
 TelitWiFi gs2200;
 TWIFI_Params gsparams;
 /*-------------------------------------------------------------------------*
@@ -67,7 +65,7 @@ static void led_onoff(int num, bool stat)
  *---------------------------------------------------------------------------*/
 static void led_effect(void)
 {
-	static int cur=0, next;
+	static int cur=0;
 	int i;
 	static bool direction=true; // which way to go
 	
@@ -122,42 +120,23 @@ void setup() {
 		while(1);
 	}
 	digitalWrite(LED0, HIGH); // turn on LED
-
 }
 
 // the loop function runs over and over again forever
 void loop() {
-	ATCMD_RESP_E resp;
 	char server_cid = 0;
 	bool served = false;
-	ATCMD_NetworkStatus networkStatus;
 	uint32_t timer=0;
-
+  int receive_size = 0;
 	while (1) {
 		if (!served) {
-			resp = ATCMD_RESP_UNMATCH;
 			// Start a TCP client
 			ConsoleLog("Start TCP Client");
-			resp = AtCmd_NCTCP((char *)TCPSRVR_IP, (char *)TCPSRVR_PORT, &server_cid);
-			if (resp != ATCMD_RESP_OK) {
-				ConsoleLog("No Connect!");
-				delay(2000);
-				continue;
-			}
+			server_cid = gs2200.connect(TCPSRVR_IP, TCPSRVR_PORT);
+			ConsolePrintf("server_cid: %d \r\n", server_cid);
 			if (server_cid == ATCMD_INVALID_CID) {
-				ConsoleLog("No CID!");
-				delay(2000);
 				continue;
 			}
-			
-			do {
-				resp = AtCmd_NSTAT(&networkStatus);
-			} while (ATCMD_RESP_OK != resp);
-			
-			ConsoleLog("Connected");
-			ConsolePrintf("IP: %d.%d.%d.%d\r\n", 
-				      networkStatus.addr.ipv4[0], networkStatus.addr.ipv4[1], networkStatus.addr.ipv4[2], networkStatus.addr.ipv4[3]);
-
 			served = true;
 		}
 		else {
@@ -167,19 +146,15 @@ void loop() {
 
 			// Start the infinite loop to send the data
 			while (1) {
-				if (ATCMD_RESP_OK != AtCmd_SendBulkData(server_cid, TCP_Data, strlen(TCP_Data))) {
+				if (false == gs2200.write(server_cid, TCP_Data, strlen((const char*)TCP_Data))) {
 					// Data is not sent, we need to re-send the data
 					delay(10);
 				}
-				
-				while (Get_GPIO37Status()) {
-					resp = AtCmd_RecvResponse();
-
-					if (ATCMD_RESP_BULK_DATA_RX == resp) {
-						if (Check_CID(server_cid)) {
-							ConsolePrintf("Receive %d byte:%s \r\n", ESCBufferCnt-1, ESCBuffer+1);
-						}
-						
+				while (gs2200.available()) {
+					receive_size = gs2200.read(server_cid, TCP_Receive_Data, TCP_RECEIVE_PACKET_SIZE);
+					if (0 < receive_size) {
+						ConsolePrintf("Receive %d byte:%s \r\n", receive_size, TCP_Receive_Data);
+						memset(TCP_Receive_Data, 0, TCP_RECEIVE_PACKET_SIZE);
 						WiFi_InitESCBuffer();
 					}
 				}
@@ -191,5 +166,4 @@ void loop() {
 			}
 		}
 	}
-
 }
