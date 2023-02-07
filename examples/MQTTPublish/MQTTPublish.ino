@@ -15,8 +15,7 @@
  *  Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
 */
 
-#include <GS2200Hal.h>
-#include <GS2200AtCmd.h>
+#include <MqttGs2200.h>
 #include <TelitWiFi.h>
 #include "config.h"
 
@@ -28,6 +27,8 @@
  *-------------------------------------------------------------------------*/
 TelitWiFi gs2200;
 TWIFI_Params gsparams;
+MqttGs2200 theMqttGs2200;
+MQTTGS2200_HostParams hostParams;
 
 // the setup function runs once when you press reset or power the board
 void setup() {
@@ -54,70 +55,47 @@ void setup() {
 		ConsoleLog("Association Fails");
 		while(1);
 	}
+	hostParams.host = (char *)MQTT_SRVR;
+	hostParams.port = (char *)MQTT_PORT;
+	hostParams.clientID = (char *)MQTT_CLI_ID;
+	hostParams.userName = NULL;
+	hostParams.password = NULL;
+
+	theMqttGs2200.begin(&gs2200, &hostParams);
 
 	digitalWrite( LED0, HIGH ); // turn on LED
 }
 
-char server_cid = 0;
 bool served = false;
 uint16_t len, count=0;
-ATCMD_MQTTparams mqttparams;
+MQTTGS2200_Mqtt mqtt;
 
 // the loop function runs over and over again forever
 void loop() {
-
-	ATCMD_RESP_E resp;
-	ATCMD_NetworkStatus networkStatus;
-
 	if (!served) {
-		resp = ATCMD_RESP_UNMATCH;
 		// Start a MQTT client
 		ConsoleLog( "Start MQTT Client");
-
-		resp = AtCmd_MQTTCONNECT( &server_cid, (char *)MQTT_SRVR, (char *)MQTT_PORT, (char *)MQTT_CLI_ID, NULL, NULL );
-		if (resp != ATCMD_RESP_OK) {
-			ConsoleLog( "No Connect!" );
-			delay(2000);
+		if (false == theMqttGs2200.connect()) {
 			return;
 		}
-		if (server_cid == ATCMD_INVALID_CID) {
-			ConsoleLog( "No CID!" );
-			delay(2000);
-			return;
-		}
-		
-		do {
-			resp = AtCmd_NSTAT(&networkStatus);
-		} while (ATCMD_RESP_OK != resp);
-		
 		served = true;
 	}
 	else {
 		ConsoleLog( "Start to send MQTT Message");
 		// Prepare for the next chunck of incoming data
 		WiFi_InitESCBuffer();
-		
 		// Start the loop to send the data
-		strcpy( mqttparams.topic, MQTT_TOPIC );
-		mqttparams.QoS = 0;
-		mqttparams.retain = 0;
-		while( served ){
-			sprintf( mqttparams.message, "%d", count++ );
-			mqttparams.len = strlen( mqttparams.message );
-
-			if( ATCMD_RESP_OK == AtCmd_MQTTPUBLISH( server_cid, mqttparams ) ){
+		strncpy(mqtt.params.topic, MQTT_TOPIC , sizeof(mqtt.params.topic));
+		mqtt.params.QoS = 0;
+		mqtt.params.retain = 0;
+		while (served) {
+			snprintf(mqtt.params.message, sizeof(mqtt.params.message), "%d", count++ );
+			mqtt.params.len = strlen(mqtt.params.message);
+			if (true == theMqttGs2200.send(&mqtt)) {
 				ConsolePrintf( "%d was sent\r\n", count-1 );
 			}
 
-			delay(5000); // every 5 sec 
-
-			/* just in case something from GS2200 */
-			while( Get_GPIO37Status() ){
-				resp = AtCmd_RecvResponse();
-				if( ATCMD_RESP_DISCONNECT == resp )
-					served = false; // quite the loop
-			}
+			delay(5000); // every 5 sec
 		}
-		
 	}
 }
