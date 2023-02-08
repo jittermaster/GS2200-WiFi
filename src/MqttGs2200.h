@@ -47,7 +47,9 @@ public:
 
   bool begin(TelitWiFi* wifi, MQTTGS2200_HostParams* params);
   bool connect();
-  bool send(MQTTGS2200_Mqtt* mqtt);
+  bool publish(MQTTGS2200_Mqtt* mqtt);
+  bool subscribe(MQTTGS2200_Mqtt* mqtt);
+  bool receive(String& data);
   void end(){ }
 
 private:

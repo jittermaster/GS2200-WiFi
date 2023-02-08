@@ -85,7 +85,7 @@ bool MqttGs2200::connect()
 	return true;
 }
 
-bool MqttGs2200::send(MQTTGS2200_Mqtt* mqtt)
+bool MqttGs2200::publish(MQTTGS2200_Mqtt* mqtt)
 {
   if (ATCMD_RESP_OK != AtCmd_MQTTPUBLISH(mCid, mqtt->params)) {
 		return false;
@@ -93,4 +93,34 @@ bool MqttGs2200::send(MQTTGS2200_Mqtt* mqtt)
 
   mWifi->stop(mCid);
   return true;
+}
+
+bool MqttGs2200::subscribe(MQTTGS2200_Mqtt* mqtt)
+{
+	ATCMD_RESP_E resp = ATCMD_RESP_UNMATCH;
+	bool result = false;
+
+	resp = AtCmd_MQTTSUBSCRIBE(mCid, mqtt->params);
+  if (ATCMD_RESP_OK == resp) {
+		result = true;
+	} else {
+		result = false;
+	}
+
+  return result;
+}
+
+bool MqttGs2200::receive(String& data)
+{
+	ATCMD_RESP_E resp = ATCMD_RESP_UNMATCH;
+	bool result = true;
+
+	resp = AtCmd_RecieveMQTTData(data);
+	if (ATCMD_RESP_DISCONNECT == resp) {
+		result = false;
+	} else {
+		result = true;
+	}
+
+  return result;
 }
