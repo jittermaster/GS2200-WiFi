@@ -1,6 +1,6 @@
 /*
  *  HTTPClient.ino - GainSpan WiFi Module Control Program
- *  Copyright 2019 Norikazu Goto
+ *  Copyright 2023 Spresense Users
  *
  *  This work is free software; you can redistribute it and/or modify it under the terms 
  *  of the GNU Lesser General Public License as published by the Free Software Foundation; 
@@ -26,8 +26,6 @@ typedef enum{
 	GET
 } DEMO_STATUS_E;
 
-
-char server_cid = 0;
 DEMO_STATUS_E httpStat;
 char sendData[100];
 
@@ -48,7 +46,7 @@ void parse_httpresponse(char *message)
 	char *p;
 	
 	if ((p=strstr(message, "200 OK\r\n")) != NULL) {
-    ConsolePrintf("Response : %s", p+8);
+    ConsolePrintf("Response : %s\r\n", p+8);
 	}
 }
 
@@ -65,27 +63,34 @@ void post() {
 	ConsoleLog("Socket Open");
 	snprintf(sendData, sizeof(sendData), "data=%d", count);
 	do {
-		httpresponse = theHttpGs2200.send(HTTP_METHOD_POST, 10, "/postData", sendData, strlen(sendData));
+		httpresponse = theHttpGs2200.send(HTTP_METHOD_POST, 10, "/post", sendData, strlen(sendData));
 	} while (true != httpresponse);
 	
 	/* Need to receive the HTTP response */
 	while (1) {
-		if (0 < theHttpGs2200.receive(Receive_Data, RECEIVE_PACKET_SIZE)) {
-				parse_httpresponse( (char *)(Receive_Data) );
-			}
-			break;
-	}
-	start = millis();
-	while (1) {
-		if (true == theHttpGs2200.receive()) {
-			// AT+HTTPSEND command is done
-			break;
-		}
-		if (msDelta(start)>20000) {// Timeout
-			ConsoleLog("msDelta(start)>20000 Timeout.");
-			break;
-		}
-	}
+    if (gs2200.available()) {
+      if (0 < theHttpGs2200.receive(Receive_Data, RECEIVE_PACKET_SIZE)) {
+          parse_httpresponse( (char *)(Receive_Data) );
+      } else {
+        printf("theHttpGs2200.receive err.\n");
+      }
+      WiFi_InitESCBuffer();
+      break;
+    }
+  }
+  start = millis();
+  while (1) {
+    if (gs2200.available()) {
+      if (true == theHttpGs2200.receive()) {
+        // AT+HTTPSEND command is done
+        break;
+      }
+      if (msDelta(start)>20000) {// Timeout
+        ConsoleLog("msDelta(start)>20000 Timeout.");
+        break;
+      }
+    }
+  }
 
 	do {
 		httpresponse = theHttpGs2200.end();
@@ -108,27 +113,32 @@ void get() {
 		httpresponse = theHttpGs2200.connect();
 	} while (true != httpresponse);
 
-	do {
-		httpresponse = theHttpGs2200.send(HTTP_METHOD_GET, 10, HTTP_PATH, "", 0);
-	} while (true != httpresponse);
-
+	httpresponse = theHttpGs2200.send(HTTP_METHOD_GET, 10, HTTP_PATH, "", 0);
+  if (true == httpresponse) {
+    theHttpGs2200.get(Receive_Data, RECEIVE_PACKET_SIZE);
+    parse_httpresponse((char *)(Receive_Data));
+    WiFi_InitESCBuffer();
+  } else {
+    ConsoleLog( "?? Unexpected HTTP Response ??" );
+  }     
+  start = millis();
   while (1) {
-    if (0 < theHttpGs2200.receive(Receive_Data, RECEIVE_PACKET_SIZE)) {
-        parse_httpresponse( (char *)(Receive_Data) );
+    if (gs2200.available()) {
+      if (false == theHttpGs2200.receive()) {
+        theHttpGs2200.get(Receive_Data, RECEIVE_PACKET_SIZE);
+        ConsolePrintf("%s", (char *)(Receive_Data));
+        WiFi_InitESCBuffer();
+      } else{
+        // AT+HTTPSEND command is done
+        ConsolePrintf( "\r\n");
+        break;
       }
+    }
+    if (msDelta(start)>20000) {// Timeout
+      ConsoleLog("msDelta(start)>20000 Timeout.");
       break;
-  } 
-	start = millis();
-	while (1) {
-		if (true == theHttpGs2200.receive()) {
-			// AT+HTTPSEND command is done
-			break;
-		}
-		if (msDelta(start)>20000) {// Timeout
-			ConsoleLog("msDelta(start)>20000 Timeout.");
-			break;
-		}
-	}
+    } 
+  }
  
 	do {
 		httpresponse = theHttpGs2200.end();

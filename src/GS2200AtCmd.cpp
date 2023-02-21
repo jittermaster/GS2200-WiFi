@@ -34,7 +34,7 @@
 #define NUM_OF_RESPBUFFER  32
 #define WS_MAXENTRIES      (NUM_OF_RESPBUFFER - 1)
 
-//#define ATCMD_DEBUG_ENABLE
+// #define ATCMD_DEBUG_ENABLE
 
 
 /*-------------------------------------------------------------------------*

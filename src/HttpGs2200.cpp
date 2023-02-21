@@ -28,7 +28,7 @@
 #define DBG(...)
 #define ERR(...)
 #endif /* HTTP_DEBUG */
-
+extern uint8_t ESCBuffer[];
 
 bool HttpGs2200::begin(TelitWiFi* wifi, HTTPGS2200_HostParams* params)
 {
@@ -49,6 +49,20 @@ bool HttpGs2200::begin(TelitWiFi* wifi, HTTPGS2200_HostParams* params)
   return true;
 }
 
+
+bool HttpGs2200::set_cert(char* name, char* time_string, int format, int location, File *fp)
+{
+	bool result = true;
+
+	AtCmd_TCERTADD(name, format, location, *fp); 
+
+  AtCmd_SETTIME(time_string);
+	AtCmd_SSLCONF(100);
+	AtCmd_LOGLVL(2);
+
+  return result;
+}
+
 bool HttpGs2200::config(ATCMD_HTTP_HEADER_E param, const char *val)
 {
 	ATCMD_RESP_E resp = ATCMD_RESP_UNMATCH;
@@ -65,20 +79,27 @@ bool HttpGs2200::config(ATCMD_HTTP_HEADER_E param, const char *val)
   return result;
 }
 
-bool HttpGs2200::connect()
+bool HttpGs2200::connect(bool isTls)
 {
 	ATCMD_RESP_E resp;
 	ATCMD_NetworkStatus networkStatus;
 
 	resp = ATCMD_RESP_UNMATCH;
-	WiFi_InitESCBuffer();
+	
 	do {
-		resp = AtCmd_HTTPOPEN(&mCid, mData.host, mData.port);
+		WiFi_InitESCBuffer();
+		if (true == isTls) {
+			resp = AtCmd_HTTPSOPEN(&mCid, mData.host, mData.port, "TLS_CA");
+		} else {
+			resp = AtCmd_HTTPOPEN(&mCid, mData.host, mData.port);
+		}
+		
 		if (resp != ATCMD_RESP_OK) {
 			ConsoleLog( "No Connect!" );
 			delay(2000);
 			continue;
 		}
+		
 		if (mCid == ATCMD_INVALID_CID) {
 			ConsoleLog( "No CID!" );
 			delay(2000);
@@ -113,14 +134,11 @@ bool HttpGs2200::send(ATCMD_HTTP_METHOD_E type, uint8_t timeout, const char *pag
 int HttpGs2200::receive(uint8_t* data, int length)
 {
 	int receive_size = -1;
+	
+	memset(data, 0, length);
+	WiFi_InitESCBuffer();
 
-	if (mWifi->available()) {
-		receive_size = mWifi->read(mCid, data, length);
-		if (0 < receive_size) {
-			memset(data, 0, length);
-			WiFi_InitESCBuffer();
-		}
-	}
+	receive_size = mWifi->read(mCid, data, length);
 
   return receive_size;
 }
@@ -130,15 +148,21 @@ bool HttpGs2200::receive()
 	ATCMD_RESP_E resp = ATCMD_RESP_UNMATCH;
 	bool result = false;
 
-	if (mWifi->available()) {
-		resp = AtCmd_RecvResponse();
-		if (ATCMD_RESP_OK == resp) {
-			result = true;
-		} else {
-			result = false;
-		}
+	resp = AtCmd_RecvResponse();
+	if (ATCMD_RESP_OK == resp) {
+		result = true;
+	} else {
+		result = false;
 	}
   return result;
+}
+
+void HttpGs2200::get(uint8_t* data, int length)
+{	
+	memset(data, 0, length);
+	memcpy(data,(ESCBuffer + 1),length);
+
+  return;
 }
 
 bool HttpGs2200::end()
