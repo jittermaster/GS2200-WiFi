@@ -1,6 +1,6 @@
 /*
  *  HTTPSecureClient.ino - GainSpan WiFi Module Control Program
- *  Copyright 2023 Spresense Users
+ *  Copyright 2022 Spresense Users
  *
  *  This work is free software; you can redistribute it and/or modify it under the terms 
  *  of the GNU Lesser General Public License as published by the Free Software Foundation; 
