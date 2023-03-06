@@ -24,7 +24,6 @@
  *-------------------------------------------------------------------------*/
 TelitWiFi gs2200;
 TWIFI_Params gsparams;
-
 const uint8_t UDP_Data[] = "GS2200 UDP Client Data Transfer Test.";
 const uint16_t UDP_PACKET_SIZE = 37; 
 
@@ -131,12 +130,12 @@ void loop() {
 	char server_cid = 0;
 	bool served = false;
 	uint32_t timer = 0;
-  int receive_size = 0;
+	int receive_size = 0;
 	while (1) {
 		if (!served) {
 			ConsoleLog("Start UDP Client");
 			// Create UDP Client
-      server_cid = gs2200.connectUDP(UDPSRVR_IP, UDPSRVR_PORT, LocalPort);
+			server_cid = gs2200.connectUDP(UDPSRVR_IP, UDPSRVR_PORT, LocalPort);
 			ConsolePrintf("server_cid: %d \r\n", server_cid);
 			if (server_cid == ATCMD_INVALID_CID) {
 				continue;
@@ -150,26 +149,26 @@ void loop() {
 			ConsolePrintf("\r\n");
 
 			while (1) {
-        gs2200.write(server_cid, UDP_Data, UDP_PACKET_SIZE);
+				gs2200.write(server_cid, UDP_Data, UDP_PACKET_SIZE);
 
-        // Description: Wait for a response after sending a command. Keep parsing the data until a response is found.
-        receive_size = gs2200.read(server_cid, UDP_Receive_Data, UDP_RECEIVE_PACKET_SIZE);
-        if (0 < receive_size) {
-          ConsolePrintf("%d byte Recieved successfully. \r\n", receive_size);
-          for (int i = 0; i < receive_size; i++) {
-            ConsolePrintf("%c", UDP_Receive_Data[i]);
-          }
-          ConsolePrintf("\r\n");
-          
-          memset(UDP_Receive_Data, 0, UDP_RECEIVE_PACKET_SIZE);
-          WiFi_InitESCBuffer();
-          delay(100);
-        }
+				// Description: Wait for a response after sending a command. Keep parsing the data until a response is found.
+				receive_size = gs2200.read(server_cid, UDP_Receive_Data, UDP_RECEIVE_PACKET_SIZE);
+				if (0 < receive_size) {
+					ConsolePrintf("%d byte Recieved successfully. \r\n", receive_size);
+					for (int i = 0; i < receive_size; i++) {
+						ConsolePrintf("%c", UDP_Receive_Data[i]);
+					}
+					ConsolePrintf("\r\n");
 
-        if (msDelta(timer) > 100) {
-          timer = millis();
-          led_effect();
-        }
+					memset(UDP_Receive_Data, 0, UDP_RECEIVE_PACKET_SIZE);
+					WiFi_InitESCBuffer();
+					delay(100);
+				}
+
+				if (msDelta(timer) > 100) {
+					timer = millis();
+					led_effect();
+				}
       }
     }
   }
