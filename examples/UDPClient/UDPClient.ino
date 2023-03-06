@@ -169,7 +169,7 @@ void loop() {
 					timer = millis();
 					led_effect();
 				}
-      }
-    }
-  }
+			}
+		}
+	}
 }
