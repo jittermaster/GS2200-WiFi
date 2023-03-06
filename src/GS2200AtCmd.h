@@ -235,7 +235,7 @@ ATCMD_RESP_E AtCmd_DHCPSRVR(uint8_t start);
 ATCMD_RESP_E AtCmd_NSET(char *device, char *subnet, char *gateway);
 ATCMD_RESP_E AtCmd_NSTAT(ATCMD_NetworkStatus *pStatus);
 ATCMD_RESP_E AtCmd_NCTCP(const char *destAddress, const char *port, char *cid);
-ATCMD_RESP_E AtCmd_NCUDP(char *destAddress, char *port, char *srcPort, char *cid );
+ATCMD_RESP_E AtCmd_NCUDP(const char *destAddress, const char *port, const char *srcPort, char *cid);
 ATCMD_RESP_E AtCmd_NSTCP(char *port, char *cid);
 ATCMD_RESP_E AtCmd_NSUDP(char *port, char *cid);
 ATCMD_RESP_E AtCmd_NCLOSE(uint8_t cid);
