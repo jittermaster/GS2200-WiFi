@@ -50,18 +50,17 @@ void setup() {
 	}
 
 	/* GS2200 Association to AP */
-  if (gs2200.activate_station(AP_SSID, PASSPHRASE)) {
+	if (gs2200.activate_station(AP_SSID, PASSPHRASE)) {
 		ConsoleLog("Association Fails");
 		while(1);
 	}
  
-  hostParams.host = (char *)MQTT_SRVR;
-  hostParams.port = (char *)MQTT_PORT;
-  hostParams.clientID = (char *)MQTT_CLI_ID;
-  hostParams.userName = NULL;
-  hostParams.password = NULL;
-  
-  theMqttGs2200.begin(&gs2200, &hostParams);
+	hostParams.host = (char *)MQTT_SRVR;
+	hostParams.port = (char *)MQTT_PORT;
+	hostParams.clientID = (char *)MQTT_CLI_ID;
+	hostParams.userName = NULL;
+	hostParams.password = NULL;
+	theMqttGs2200.begin(&gs2200, &hostParams);
 	digitalWrite( LED0, HIGH ); // turn on LED
 }
 
@@ -87,7 +86,7 @@ void loop() {
 		WiFi_InitESCBuffer();
 		
 		// Start the loop to receive the data
-    strncpy(mqtt.params.topic, MQTT_TOPIC , sizeof(mqtt.params.topic));
+		strncpy(mqtt.params.topic, MQTT_TOPIC , sizeof(mqtt.params.topic));
 		mqtt.params.QoS = 0;
 		mqtt.params.retain = 0;
 		if (true == theMqttGs2200.subscribe(&mqtt)) {
