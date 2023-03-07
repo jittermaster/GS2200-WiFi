@@ -309,7 +309,11 @@ void TelitWiFi::stop(char cid)
 			resp = AtCmd_NCLOSEALL();
 			WiFi_InitESCBuffer();
 		}
+
+		sleep(2);
+
 	}
+
 }
 
 /**

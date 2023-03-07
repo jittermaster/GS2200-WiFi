@@ -91,7 +91,7 @@ void loop() {
 		while (served) {
 			snprintf(mqtt.params.message, sizeof(mqtt.params.message), "%d", count++ );
 			mqtt.params.len = strlen(mqtt.params.message);
-			if (true == theMqttGs2200.send(&mqtt)) {
+			if (true == theMqttGs2200.publish(&mqtt)) {
 				ConsolePrintf( "%d was sent\r\n", count-1 );
 			}
 

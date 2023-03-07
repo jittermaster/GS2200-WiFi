@@ -50,7 +50,7 @@ void setup() {
 	}
 
 	/* GS2200 Association to AP */
-	if (gs2200.activate_station(AP_SSID, PASSPHRASE)) {
+  if (gs2200.activate_station(AP_SSID, PASSPHRASE)) {
 		ConsoleLog("Association Fails");
 		while(1);
 	}
@@ -76,9 +76,9 @@ void loop() {
 	if (!served) {
 		// Start a MQTT client
 		ConsoleLog( "Start MQTT Client");
-    if (false == theMqttGs2200.connect()) {
-      return;
-    }
+		if (false == theMqttGs2200.connect()) {
+			return;
+		}
 		served = true;
 	}
 	else {
@@ -87,23 +87,23 @@ void loop() {
 		WiFi_InitESCBuffer();
 		
 		// Start the loop to receive the data
-		strncpy(mqtt.params.topic, MQTT_TOPIC , sizeof(mqtt.params.topic));
-    mqtt.params.QoS = 0;
-    mqtt.params.retain = 0;
+    strncpy(mqtt.params.topic, MQTT_TOPIC , sizeof(mqtt.params.topic));
+		mqtt.params.QoS = 0;
+		mqtt.params.retain = 0;
 		if (true == theMqttGs2200.subscribe(&mqtt)) {
 			ConsolePrintf( "Subscribed! \n" );
 		}
 		while (served) {
-      String data;
-      /* just in case something from GS2200 */
-      while (gs2200.available()) {
-        if (false == theMqttGs2200.receive(data)) {
-          served = false; // quite the loop
-          break;
-        }
+			String data;
+			/* just in case something from GS2200 */
+			while (gs2200.available()) {
+				if (false == theMqttGs2200.receive(data)) {
+					served = false; // quite the loop
+					break;
+				}
 
-        Serial.println("Recieve data: " + data);
-		  }
-	  }
+				Serial.println("Recieve data: " + data);
+			}
+		}
 	}
 }
