@@ -54,14 +54,14 @@ void setup() {
 		ConsoleLog("Association Fails");
 		while(1);
 	}
+ 
   hostParams.host = (char *)MQTT_SRVR;
   hostParams.port = (char *)MQTT_PORT;
   hostParams.clientID = (char *)MQTT_CLI_ID;
   hostParams.userName = NULL;
   hostParams.password = NULL;
-
-  theMqttGs2200.begin(&gs2200, &hostParams);
   
+  theMqttGs2200.begin(&gs2200, &hostParams);
 	digitalWrite( LED0, HIGH ); // turn on LED
 }
 
