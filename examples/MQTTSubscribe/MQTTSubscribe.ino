@@ -26,11 +26,11 @@
  *-------------------------------------------------------------------------*/
 TelitWiFi gs2200;
 TWIFI_Params gsparams;
-MqttGs2200 theMqttGs2200;
-MQTTGS2200_HostParams hostParams;
+MqttGs2200 theMqttGs2200(&gs2200);
 
 // the setup function runs once when you press reset or power the board
 void setup() {
+	MQTTGS2200_HostParams hostParams;
 	/* initialize digital pin LED_BUILTIN as an output. */
 	pinMode(LED0, OUTPUT);
 	digitalWrite( LED0, LOW );   // turn the LED off (LOW is the voltage level)
@@ -60,7 +60,7 @@ void setup() {
 	hostParams.clientID = (char *)MQTT_CLI_ID;
 	hostParams.userName = NULL;
 	hostParams.password = NULL;
-	theMqttGs2200.begin(&gs2200, &hostParams);
+	theMqttGs2200.begin(&hostParams);
 	digitalWrite( LED0, HIGH ); // turn on LED
 }
 

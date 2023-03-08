@@ -30,13 +30,12 @@
 #endif /* MQTT_DEBUG */
 
 
-bool MqttGs2200::begin(TelitWiFi* wifi, MQTTGS2200_HostParams* params)
+bool MqttGs2200::begin(MQTTGS2200_HostParams* params)
 {
 #ifdef MQTT_DEBUG
     Serial.println("Initialize MQTT");
 #endif
 
-  mWifi = wifi;
   mCid = ATCMD_INVALID_CID;
 
   mData.clientID = params->clientID;

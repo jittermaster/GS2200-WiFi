@@ -42,10 +42,10 @@ class MqttGs2200
 {
 public:
 
-  MqttGs2200(){}
+  MqttGs2200(TelitWiFi* wifi) : mWifi(wifi) {}
   ~MqttGs2200(){}
 
-  bool begin(TelitWiFi* wifi, MQTTGS2200_HostParams* params);
+  bool begin(MQTTGS2200_HostParams* params);
   bool connect();
   bool publish(MQTTGS2200_Mqtt* mqtt);
   bool subscribe(MQTTGS2200_Mqtt* mqtt);
