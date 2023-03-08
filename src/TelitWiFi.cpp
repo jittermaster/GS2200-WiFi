@@ -287,7 +287,7 @@ char TelitWiFi::connectUDP(const String& ip, const String& port, const String& s
 }
 
 /**
- * @brief Connect TCP server
+ * @brief stop server
  * @param char cid: Channel ID
  * 
  */
