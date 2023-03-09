@@ -241,15 +241,15 @@ void loop() {
 	start_radio();
 
 	// Connect Net Radio server
-  while (1) {
-    if (true != gs2200.write(server_cid, (const uint8_t*)TCP_Data, strlen(TCP_Data))) {
-      // Data is not sent, we need to re-send the data
-      delay(1);
-      continue;
-    } else {
-      break;
-    }
-  }
+	while (1) {
+		if (true != gs2200.write(server_cid, (const uint8_t*)TCP_Data, strlen(TCP_Data))) {
+			// Data is not sent, we need to re-send the data
+			delay(1);
+			continue;
+		} else {
+			break;
+		}
+	}
 	puts(RADIO_NAME);
 	task_create("es_reader", 155, 1024, es_reader, NULL);
 
