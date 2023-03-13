@@ -30,13 +30,12 @@
 #endif /* HTTP_DEBUG */
 extern uint8_t ESCBuffer[];
 
-bool HttpGs2200::begin(TelitWiFi* wifi, HTTPGS2200_HostParams* params)
+bool HttpGs2200::begin(HTTPGS2200_HostParams* params)
 {
 #ifdef HTTP_DEBUG
     Serial.println("Initialize HTTP");
 #endif
 
-  mWifi = wifi;
   mCid = ATCMD_INVALID_CID;
 
   mData.host = params->host;
@@ -157,8 +156,8 @@ bool HttpGs2200::receive()
   return result;
 }
 
-void HttpGs2200::get(uint8_t* data, int length)
-{	
+void HttpGs2200::get_data(uint8_t* data, int length)
+{
 	memset(data, 0, length);
 	memcpy(data,(ESCBuffer + 1),length);
 

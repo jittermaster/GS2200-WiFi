@@ -35,17 +35,17 @@ class HttpGs2200
 {
 public:
 
-  HttpGs2200(){}
+  HttpGs2200(TelitWiFi* wifi) : mWifi(wifi) {}
   ~HttpGs2200(){}
 
-  bool begin(TelitWiFi* wifi, HTTPGS2200_HostParams* params);
+  bool begin(HTTPGS2200_HostParams* params);
   bool set_cert(char* name, char* time_string, int format, int location, File *fp);
   bool connect(bool isTls = false);
   bool config(ATCMD_HTTP_HEADER_E param, const char *val);
   bool send(ATCMD_HTTP_METHOD_E type, uint8_t timeout, const char *page, const char *msg, uint32_t size);
   int receive(uint8_t* data, int length);
   bool receive();
-  void get(uint8_t* data, int length);
+  void get_data(uint8_t* data, int length);
   bool end();
 
 private:

@@ -37,7 +37,7 @@ uint8_t Receive_Data[RECEIVE_PACKET_SIZE] = {0};
 
 TelitWiFi gs2200;
 TWIFI_Params gsparams;
-HttpGs2200 theHttpGs2200;
+HttpGs2200 theHttpGs2200(&gs2200);
 HTTPGS2200_HostParams hostParams;
 SDClass theSD;
 
@@ -122,7 +122,7 @@ void get() {
 
 	httpresponse = theHttpGs2200.send(HTTP_METHOD_GET, 10, HTTP_PATH, "", 0);
   if (true == httpresponse) {
-    theHttpGs2200.get(Receive_Data, RECEIVE_PACKET_SIZE);
+    theHttpGs2200.get_data(Receive_Data, RECEIVE_PACKET_SIZE);
     parse_httpresponse((char *)(Receive_Data));
     WiFi_InitESCBuffer();
   } else {
@@ -132,7 +132,7 @@ void get() {
   while (1) {
     if (gs2200.available()) {
       if (false == theHttpGs2200.receive()) {
-        theHttpGs2200.get(Receive_Data, RECEIVE_PACKET_SIZE);
+        theHttpGs2200.get_data(Receive_Data, RECEIVE_PACKET_SIZE);
         ConsolePrintf("%s", (char *)(Receive_Data));
         WiFi_InitESCBuffer();
       } else{
@@ -191,7 +191,7 @@ void setup() {
 
 	hostParams.host = (char *)HTTP_SRVR_IP;
 	hostParams.port = (char *)HTTP_PORT;
-	theHttpGs2200.begin(&gs2200, &hostParams);
+	theHttpGs2200.begin(&hostParams);
 
 	ConsoleLog("Start HTTP Secure Client");
 
@@ -215,7 +215,7 @@ void setup() {
 
 // the loop function runs over and over again forever
 void loop() {
-	httpStat = POST;
+	httpStat = GET;
 	while (1) {
 		switch (httpStat) {
 		case POST:

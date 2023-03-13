@@ -89,7 +89,7 @@ public:
 	bool available();
 
 	/**
-	 * Send data to TCP server
+	 * Read data from TCP server
 	 */
 	int read(char cid, uint8_t* data, int length);
 
