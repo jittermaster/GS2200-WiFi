@@ -122,9 +122,9 @@ bool HttpGs2200::send(ATCMD_HTTP_METHOD_E type, uint8_t timeout, const char *pag
 	bool result = false;
 
 	resp = AtCmd_HTTPSEND(mCid, type, timeout, page, msg, size);
-  if (ATCMD_RESP_OK == resp || ATCMD_RESP_BULK_DATA_RX == resp) {
+	if (ATCMD_RESP_OK == resp || ATCMD_RESP_BULK_DATA_RX == resp) {
 		result = true;
-  } else {
+	} else {
 		result = false;
 	}
 	return result;
@@ -139,7 +139,7 @@ int HttpGs2200::receive(uint8_t* data, int length)
 
 	receive_size = mWifi->read(mCid, data, length);
 
-  return receive_size;
+	return receive_size;
 }
 
 bool HttpGs2200::receive()
@@ -153,7 +153,7 @@ bool HttpGs2200::receive()
 	} else {
 		result = false;
 	}
-  return result;
+	return result;
 }
 
 void HttpGs2200::get_data(uint8_t* data, int length)
@@ -161,7 +161,7 @@ void HttpGs2200::get_data(uint8_t* data, int length)
 	memset(data, 0, length);
 	memcpy(data,(ESCBuffer + 1),length);
 
-  return;
+	return;
 }
 
 bool HttpGs2200::end()
@@ -177,5 +177,5 @@ bool HttpGs2200::end()
 		result = false;
 	}
 
-  return result;
+	return result;
 }

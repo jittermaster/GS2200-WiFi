@@ -50,7 +50,7 @@ void parse_httpresponse(char *message)
 	char *p;
 	
 	if ((p=strstr(message, "200 OK\r\n")) != NULL) {
-    ConsolePrintf("Response : %s\r\n", p+8);
+		ConsolePrintf("Response : %s\r\n", p+8);
 	}
 }
 
@@ -73,30 +73,27 @@ void post() {
 	
 	/* Need to receive the HTTP response */
 	while (1) {
-    if (gs2200.available()) {
-      if (0 < theHttpGs2200.receive(Receive_Data, RECEIVE_PACKET_SIZE)) {
-          parse_httpresponse( (char *)(Receive_Data) );
-      }
-//      else {
-//        printf("theHttpGs2200.receive err.\n");
-//      }
-      WiFi_InitESCBuffer();
-      break;
-    }
-  }
-  start = millis();
-  while (1) {
-    if (gs2200.available()) {
-      if (true == theHttpGs2200.receive()) {
-        // AT+HTTPSEND command is done
-        break;
-      }
-      if (msDelta(start)>20000) {// Timeout
-        ConsoleLog("msDelta(start)>20000 Timeout.");
-        break;
-      }
-    }
-  }
+		if (gs2200.available()) {
+			if (0 < theHttpGs2200.receive(Receive_Data, RECEIVE_PACKET_SIZE)) {
+					parse_httpresponse( (char *)(Receive_Data) );
+			}
+			WiFi_InitESCBuffer();
+			break;
+		}
+	}
+	start = millis();
+	while (1) {
+		if (gs2200.available()) {
+			if (true == theHttpGs2200.receive()) {
+				// AT+HTTPSEND command is done
+				break;
+			}
+			if (msDelta(start)>20000) {// Timeout
+				ConsoleLog("msDelta(start)>20000 Timeout.");
+				break;
+			}
+		}
+	}
 
 	do {
 		httpresponse = theHttpGs2200.end();
@@ -121,31 +118,31 @@ void get() {
 	} while (true != httpresponse);
 
 	httpresponse = theHttpGs2200.send(HTTP_METHOD_GET, 10, HTTP_PATH, "", 0);
-  if (true == httpresponse) {
-    theHttpGs2200.get_data(Receive_Data, RECEIVE_PACKET_SIZE);
-    parse_httpresponse((char *)(Receive_Data));
-    WiFi_InitESCBuffer();
-  } else {
-    ConsoleLog( "?? Unexpected HTTP Response ??" );
-  }     
-  start = millis();
-  while (1) {
-    if (gs2200.available()) {
-      if (false == theHttpGs2200.receive()) {
-        theHttpGs2200.get_data(Receive_Data, RECEIVE_PACKET_SIZE);
-        ConsolePrintf("%s", (char *)(Receive_Data));
-        WiFi_InitESCBuffer();
-      } else{
-        // AT+HTTPSEND command is done
-        ConsolePrintf( "\r\n");
-        break;
-      }
-    }
-    if (msDelta(start)>20000) {// Timeout
-      ConsoleLog("msDelta(start)>20000 Timeout.");
-      break;
-    } 
-  }
+	if (true == httpresponse) {
+		theHttpGs2200.get_data(Receive_Data, RECEIVE_PACKET_SIZE);
+		parse_httpresponse((char *)(Receive_Data));
+		WiFi_InitESCBuffer();
+	} else {
+		ConsoleLog( "?? Unexpected HTTP Response ??" );
+	}
+	start = millis();
+	while (1) {
+		if (gs2200.available()) {
+			if (false == theHttpGs2200.receive()) {
+				theHttpGs2200.get_data(Receive_Data, RECEIVE_PACKET_SIZE);
+				ConsolePrintf("%s", (char *)(Receive_Data));
+				WiFi_InitESCBuffer();
+			} else{
+				// AT+HTTPSEND command is done
+				ConsolePrintf( "\r\n");
+				break;
+			}
+		}
+		if (msDelta(start)>20000) {// Timeout
+			ConsoleLog("msDelta(start)>20000 Timeout.");
+			break;
+		}
+	}
  
 	do {
 		httpresponse = theHttpGs2200.end();
@@ -163,9 +160,9 @@ void setup() {
 		; /* wait until SD card is mounted. */
 	}
 
-  RTC.begin();
-  RtcTime compiledDateTime(__DATE__, __TIME__);
-  RTC.setTime(compiledDateTime);
+	RTC.begin();
+	RtcTime compiledDateTime(__DATE__, __TIME__);
+	RTC.setTime(compiledDateTime);
   
 	/* initialize digital pin LED_BUILTIN as an output. */
 	pinMode(LED0, OUTPUT);
@@ -203,9 +200,9 @@ void setup() {
 	// Set certifications via a file on the SD card before connecting to the server
 	File rootCertsFile = theSD.open(ROOTCA_FILE, FILE_READ);
 
-  char time_string[128];
-  RtcTime rtc = RTC.getTime();
-  snprintf(time_string, sizeof(time_string), "%02d/%02d/%04d,%02d:%02d:%02d", rtc.day(), rtc.month(), rtc.year(), rtc.hour(), rtc.minute(), rtc.second());
+	char time_string[128];
+	RtcTime rtc = RTC.getTime();
+	snprintf(time_string, sizeof(time_string), "%02d/%02d/%04d,%02d:%02d:%02d", rtc.day(), rtc.month(), rtc.year(), rtc.hour(), rtc.minute(), rtc.second());
   
 	theHttpGs2200.set_cert((char*)"TLS_CA", time_string, 0, 1, &rootCertsFile); 
 	rootCertsFile.close();
