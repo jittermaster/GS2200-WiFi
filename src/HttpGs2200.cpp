@@ -19,31 +19,30 @@
 
 #include "HttpGs2200.h"
 
-// #define HTTP_DEBUG
+#define ENABLE_HTTP_DEBUG
 
-#ifdef HTTP_DEBUG
-#define DBG(...) { Serial.print(__VA_ARGS__); }
-#define ERR(...) { Serial.print(__VA_ARGS__); }
+#ifdef ENABLE_HTTP_DEBUG
+#define HTTP_DEBUG(...)    \
+	{\
+	printf("DEBUG:   %s L#%d ", __func__, __LINE__);  \
+	printf(__VA_ARGS__); \
+	printf("\n"); \
+	}
 #else
-#define DBG(...)
-#define ERR(...)
+#define HTTP_DEBUG(...)
 #endif /* HTTP_DEBUG */
 extern uint8_t ESCBuffer[];
 
 bool HttpGs2200::begin(HTTPGS2200_HostParams* params)
 {
-#ifdef HTTP_DEBUG
-    Serial.println("Initialize HTTP");
-#endif
+  HTTP_DEBUG("Initialize HTTP");
 
   mCid = ATCMD_INVALID_CID;
 
   mData.host = params->host;
   mData.port = params->port;
   
-#ifdef HTTP_DEBUG
-  Serial.println("Server: " + (String)mData.host + ", Port: " + mData.port);
-#endif
+  HTTP_DEBUG("Server: %s, Port: %s", mData.host, mData.port);
 
   return true;
 }
@@ -62,23 +61,25 @@ bool HttpGs2200::set_cert(char* name, char* time_string, int format, int locatio
   return result;
 }
 
-bool HttpGs2200::config(ATCMD_HTTP_HEADER_E param, const char *val)
+void HttpGs2200::config(ATCMD_HTTP_HEADER_E param, const char *val)
 {
 	ATCMD_RESP_E resp = ATCMD_RESP_UNMATCH;
-	bool result = false;
 
-	resp = AtCmd_HTTPCONF(param, val);
-	if (ATCMD_RESP_OK == resp) {
-		result = true;
-	} else {
-		printf("config error! err resp = %d\n", resp);
-		result = false;
+	while (1) {
+		resp = AtCmd_HTTPCONF(param, val);
+
+		if (ATCMD_RESP_OK == resp) {
+			break;
+		} else {
+			printf("config error! err resp = %d, retry...\n", resp);
+			continue;
+		}
 	}
 
-  return result;
+  return;
 }
 
-bool HttpGs2200::connect(bool isTls)
+bool HttpGs2200::connect()
 {
 	ATCMD_RESP_E resp;
 	ATCMD_NetworkStatus networkStatus;
@@ -87,7 +88,7 @@ bool HttpGs2200::connect(bool isTls)
 	
 	do {
 		WiFi_InitESCBuffer();
-		if (true == isTls) {
+		if (0 == strncmp("443", mData.port, 3)) {
 			resp = AtCmd_HTTPSOPEN(&mCid, mData.host, mData.port, "TLS_CA");
 		} else {
 			resp = AtCmd_HTTPOPEN(&mCid, mData.host, mData.port);
@@ -110,7 +111,7 @@ bool HttpGs2200::connect(bool isTls)
 		resp = AtCmd_NSTAT(&networkStatus);
 	} while (ATCMD_RESP_OK != resp);
 
-	ConsoleLog( "Connected" );
+	HTTP_DEBUG( "Connected" );
 	ConsolePrintf("IP: %d.%d.%d.%d\r\n", 
 	              networkStatus.addr.ipv4[0], networkStatus.addr.ipv4[1], networkStatus.addr.ipv4[2], networkStatus.addr.ipv4[3]);
 	return true;
@@ -120,12 +121,14 @@ bool HttpGs2200::send(ATCMD_HTTP_METHOD_E type, uint8_t timeout, const char *pag
 {
 	ATCMD_RESP_E resp = ATCMD_RESP_UNMATCH;
 	bool result = false;
-
-	resp = AtCmd_HTTPSEND(mCid, type, timeout, page, msg, size);
-	if (ATCMD_RESP_OK == resp || ATCMD_RESP_BULK_DATA_RX == resp) {
-		result = true;
-	} else {
-		result = false;
+	while (1) {
+		resp = AtCmd_HTTPSEND(mCid, type, timeout, page, msg, size);
+		if (ATCMD_RESP_OK == resp || ATCMD_RESP_BULK_DATA_RX == resp) {
+			result = true;
+			break;
+		} else {
+			continue;
+		}
 	}
 	return result;
 }
@@ -137,22 +140,44 @@ int HttpGs2200::receive(uint8_t* data, int length)
 	memset(data, 0, length);
 	WiFi_InitESCBuffer();
 
-	receive_size = mWifi->read(mCid, data, length);
+	while (1) {
+		if (mWifi->available()) {
+			receive_size = mWifi->read(mCid, data, length);
+			if (0 < receive_size) {
+				break;
+			} else {
+				continue;
+				printf("theHttpGs2200.receive err.\n");
+			}
+		}
+	}
 
 	return receive_size;
 }
 
-bool HttpGs2200::receive()
+bool HttpGs2200::receive(uint64_t timeout)
 {
 	ATCMD_RESP_E resp = ATCMD_RESP_UNMATCH;
 	bool result = false;
-
-	resp = AtCmd_RecvResponse();
-	if (ATCMD_RESP_OK == resp) {
-		result = true;
-	} else {
-		result = false;
+	uint64_t start = millis();
+	while (1) {
+		if (mWifi->available()) {
+			resp = AtCmd_RecvResponse();
+			if (ATCMD_RESP_OK == resp) {
+				result = true;
+				break;
+			} else {
+				result = false;
+				break;
+			}
+		}
+		if (msDelta(start)> timeout ) {// Timeout
+			result = false;
+			printf("msDelta(start)> %lld Timeout.\n", timeout);
+			break;
+		}
 	}
+	
 	return result;
 }
 
@@ -164,18 +189,45 @@ void HttpGs2200::get_data(uint8_t* data, int length)
 	return;
 }
 
+bool HttpGs2200::post(const char* url_path, const char* body) {
+	bool result = false;
+
+	HTTP_DEBUG("POST Start");
+	result = connect();
+	
+	HTTP_DEBUG("Socket Open");
+	result = send(HTTP_METHOD_POST, 10, url_path, body, strlen(body));
+
+	return result;
+}
+
+bool HttpGs2200::get(const char* url_path) {
+	bool result = false;
+
+	HTTP_DEBUG("GET Start");
+	result = connect();
+	
+	HTTP_DEBUG("Open Socket");
+	result = send(HTTP_METHOD_GET, 10, url_path, "", 0);
+
+	return result;
+}
+
 bool HttpGs2200::end()
 {
 	ATCMD_RESP_E resp = ATCMD_RESP_UNMATCH;
 	bool result = false;
+	while (1) {
+		resp = AtCmd_HTTPCLOSE(mCid);
 
-	resp = AtCmd_HTTPCLOSE(mCid);
-
-	if (ATCMD_RESP_OK == resp || ATCMD_RESP_INVALID_CID == resp ) {
-		result = true;
-	} else {
-		result = false;
+		if (ATCMD_RESP_OK == resp || ATCMD_RESP_INVALID_CID == resp ) {
+			result = true;
+			break;
+		} else {
+			result = false;
+			continue;
+		}
 	}
-
+	HTTP_DEBUG("Socket Closed");
 	return result;
 }
