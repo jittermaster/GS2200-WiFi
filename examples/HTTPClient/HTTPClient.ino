@@ -48,10 +48,6 @@ void parse_httpresponse(char *message)
 	}
 }
 
-void post() {
-	
-}
-
 void setup() {
 
 	/* initialize digital pin LED_BUILTIN as an output. */
@@ -106,7 +102,7 @@ void loop() {
 			result = theHttpGs2200.post("/postData", sendData);
 
 			if (0 < theHttpGs2200.receive(Receive_Data, RECEIVE_PACKET_SIZE)) {
-					parse_httpresponse( (char *)(Receive_Data) );
+				parse_httpresponse( (char *)(Receive_Data) );
 			} else {
 				printf("theHttpGs2200.receive err.\n");
 			}

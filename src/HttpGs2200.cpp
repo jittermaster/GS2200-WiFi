@@ -184,7 +184,7 @@ bool HttpGs2200::receive(uint64_t timeout)
 void HttpGs2200::get_data(uint8_t* data, int length)
 {
 	memset(data, 0, length);
-	memcpy(data,(ESCBuffer + 1),length);
+	memcpy(data, (ESCBuffer + 1), length);
 
 	return;
 }
