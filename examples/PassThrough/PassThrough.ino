@@ -39,7 +39,7 @@ void setup() {
 	ConsoleLog("");
 
 	/* Initialize SPI access of GS2200 */
-	Init_GS2200_SPI();
+	Init_GS2200_SPI_type(iS110B_TypeC);
 
 	digitalWrite( LED0, HIGH ); // turn on LED
 }
