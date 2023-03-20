@@ -120,7 +120,7 @@ void loop() {
 			theHttpGs2200.config(HTTP_HEADER_TRANSFER_ENCODING, "chunked");
 			//create post data.
 			snprintf(sendData, sizeof(sendData), "data=%d", count);
-			result = theHttpGs2200.post("/post", sendData);
+			result = theHttpGs2200.post(HTTP_POST_PATH, sendData);
 
 			if (0 < theHttpGs2200.receive(Receive_Data, RECEIVE_PACKET_SIZE)) {
 					parse_httpresponse( (char *)(Receive_Data) );
@@ -140,16 +140,16 @@ void loop() {
 		case GET:
 			theHttpGs2200.config(HTTP_HEADER_TRANSFER_ENCODING, "identity");
 
-			result = theHttpGs2200.get(HTTP_PATH);
+			result = theHttpGs2200.get(HTTP_GET_PATH);
 			if (true == result) {
-				theHttpGs2200.get_data(Receive_Data, RECEIVE_PACKET_SIZE);
+				theHttpGs2200.read_data(Receive_Data, RECEIVE_PACKET_SIZE);
 				parse_httpresponse((char *)(Receive_Data));
 			} else {
 				ConsoleLog( "?? Unexpected HTTP Response ??" );
 			}
 			result = theHttpGs2200.receive(2000);
 			if (false == result) {
-				theHttpGs2200.get_data(Receive_Data, RECEIVE_PACKET_SIZE);
+				theHttpGs2200.read_data(Receive_Data, RECEIVE_PACKET_SIZE);
 				ConsolePrintf("%s", (char *)(Receive_Data));
 			} else {
 				// AT+HTTPSEND command is done

@@ -25,8 +25,9 @@
 
 #define  HTTP_SRVR_IP  "httpbin.org"
 #define  HTTP_PORT     "443"
-#define  HTTP_PATH     "/get"
+#define  HTTP_GET_PATH  "/get"
+#define  HTTP_POST_PATH "/post"
 
-#define ROOTCA_FILE    "*******.cer"
+#define ROOTCA_FILE    "*******.crt"
 
 #endif /*_CONFIG_H_*/

@@ -45,7 +45,7 @@ public:
   bool send(ATCMD_HTTP_METHOD_E type, uint8_t timeout, const char *page, const char *msg, uint32_t size);
   int receive(uint8_t* data, int length);
   bool receive(uint64_t timeout = 10000);
-  void get_data(uint8_t* data, int length);
+  void read_data(uint8_t* data, int length);
   bool end();
   bool post(const char* url_path, const char* body);
   bool get(const char* url_path);

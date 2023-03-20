@@ -25,7 +25,7 @@
 
 #define  HTTP_SRVR_IP  "192.168.1.100"
 #define  HTTP_PORT     "10080"
-#define  HTTP_PATH     "/"
-
+#define  HTTP_GET_PATH "/"
+#define  HTTP_POST_PATH "/postData"
 
 #endif /*_CONFIG_H_*/
