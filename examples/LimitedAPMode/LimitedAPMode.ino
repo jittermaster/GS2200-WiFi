@@ -74,7 +74,7 @@ void loop() {
 	server_cid = gs2200.start((char*)TCPSRVR_PORT);
 	if (server_cid == ATCMD_INVALID_CID) {
 		delay(2000);
-		return;;
+		return;
 	}
 
 	while(1) {
