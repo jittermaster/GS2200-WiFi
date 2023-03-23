@@ -15,28 +15,23 @@
  *  Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
 */
 
-#include <GS2200Hal.h>
-#include <GS2200AtCmd.h>
 #include <TelitWiFi.h>
 #include "config.h"
 
 #include <Camera.h>
 #include <time.h>
 
-extern uint8_t ESCBuffer[];
-extern uint32_t ESCBufferCnt;
+const uint16_t RECEIVE_PACKET_SIZE = 1500;
+uint8_t Receive_Data[RECEIVE_PACKET_SIZE] = {0};
 
 TelitWiFi gs2200;
 TWIFI_Params gsparams;
 
-String ssid(AP_SSID);
-String pass(PASSPHRASE);
-String ip(AP_SSID);
-String port(PASSPHRASE);
 
 /****************************************************************************
  * Initial parameters
  ****************************************************************************/
+//#define USE_HDR_CAMERA
 #define  CONSOLE_BAUDRATE  115200
 
 int               g_width   = CAM_IMGSIZE_QVGA_H;
@@ -89,7 +84,7 @@ void setup()
   Serial.begin( CONSOLE_BAUDRATE );
 
   /* Initialize SPI access of GS2200 */
-  Init_GS2200_SPI();
+  Init_GS2200_SPI_type(iS110B_TypeC);
 
   /* Initialize AT Command Library Buffer */
   gsparams.mode = ATCMD_MODE_LIMITED_AP;
@@ -106,22 +101,25 @@ void setup()
   }
 
   Serial.println("Setup Camera...");
-  
+
   CamErr err = theCamera.begin();
   if (err != CAM_ERR_SUCCESS) { printError(err); }
 
 //  err = theCamera.startStreaming(false, (void*)0 );
 //  if (err != CAM_ERR_SUCCESS) { printError(err); }
 
+#ifdef USE_HDR_CAMERA
   err = theCamera.setHDR(g_hdr);
   if (err != CAM_ERR_SUCCESS) { printError(err); }
+#else
+#endif
 
   err = theCamera.setAutoWhiteBalanceMode(g_wb);
   if (err != CAM_ERR_SUCCESS) { printError(err); }
 
   err = theCamera.setStillPictureImageFormat(g_width, g_height, g_img_fmt, g_divisor);
   if (err != CAM_ERR_SUCCESS) { printError(err); }
-  
+
   Serial.println("Setup Camera done.");
 
   ledOn(LED0);
@@ -132,129 +130,106 @@ void setup()
  ****************************************************************************/
 void loop() {
 
-  ATCMD_RESP_E resp;
-  char server_cid = 0, remote_cid=0;
-  ATCMD_NetworkStatus networkStatus;
-  uint32_t timer=0;
+  char remote_cid = 0;
+  char server_cid = 0;
+  uint32_t timer = 5000;
 
-  resp = ATCMD_RESP_UNMATCH;
   ConsoleLog( "Start TCP Server");
 
-  resp = AtCmd_NSTCP( TCPSRVR_PORT, &server_cid);
-  if (resp != ATCMD_RESP_OK) {
-    ConsoleLog( "No Connect!" );
-    delay(2000);
-    return;
-  }
-
+  server_cid = gs2200.start((char*)TCPSRVR_PORT);
   if (server_cid == ATCMD_INVALID_CID) {
-    ConsoleLog( "No CID!" );
     delay(2000);
     return;
   }
 
-  while( 1 ) {
+  while (1) {
     ConsoleLog( "Waiting for TCP Client");
-
-    if( ATCMD_RESP_TCP_SERVER_CONNECT != WaitForTCPConnection( &remote_cid, 5000 ) ) {
+    if (true != gs2200.wait_connection(&remote_cid, timer)) {
       continue;
     }
 
     ConsoleLog( "TCP Client Connected");
-    // Prepare for the next chunck of incoming data
-    WiFi_InitESCBuffer();
     sleep(1);
-
     unsigned long cam_before, cam_after, one_before, one_after;
-    while( Get_GPIO37Status() ) {
-      resp = AtCmd_RecvResponse();
-      if( ATCMD_RESP_BULK_DATA_RX == resp ) {
-        if( Check_CID( remote_cid ) ) {
+    while (gs2200.available()) {
+      if (0 < gs2200.read(remote_cid, Receive_Data, RECEIVE_PACKET_SIZE)) {
+        String message = (char*)Receive_Data;
 
-          String message = ESCBuffer+1;
+        int space1_pos = message.indexOf(' ');
+        int space2_pos = message.indexOf(' ', space1_pos + 1);
+        String method  = message.substring(0, space1_pos);
+        String path    = message.substring(space1_pos + 1, space2_pos);
+        //ConsolePrintf( "get method: %s\r\n", method.c_str() );
+        //ConsolePrintf( "get path  : %s\r\n", path.c_str() );
 
-          int space1_pos = message.indexOf(' ');
-          int space2_pos = message.indexOf(' ', space1_pos + 1);
-          String method  = message.substring(0, space1_pos);
-          String path    = message.substring(space1_pos + 1, space2_pos);
-          //ConsolePrintf( "get method: %s\r\n", method.c_str() );
-          //ConsolePrintf( "get path  : %s\r\n", path.c_str() );
+        if (method == "GET" && path == "/cam.jpg") {
 
-          if (method == "GET" && path == "/cam.jpg") {
+          String response = "HTTP/1.1 200 OK\r\n"
+                            "Content-Type: multipart/x-mixed-replace; boundary=--MOBOTIX_Fast_Serverpush\r\n"
+                            "\r\n";
 
-            String response = "HTTP/1.1 200 OK\r\n"
-                              "Content-Type: multipart/x-mixed-replace; boundary=--MOBOTIX_Fast_Serverpush\r\n"
-                              "\r\n";
+          gs2200.write(remote_cid, (const uint8_t*)response.c_str(), response.length());
+          while (1) {
+            one_before = millis();
 
-            ATCMD_RESP_E err = AtCmd_SendBulkData( remote_cid, response.c_str(), response.length() );
-            while(1){
-              one_before = millis();
+            cam_before = millis();
+            CamImage img = theCamera.takePicture();
+            cam_after = millis();
+            ConsolePrintf( "Take Cam:%dms\n", cam_after - cam_before );
 
-              cam_before = millis();
-              CamImage img = theCamera.takePicture();
-              cam_after = millis();
-              ConsolePrintf( "Take Cam:%dms\n", cam_after - cam_before );
+            if(img.getImgSize() != 0) {
+              //Serial.print("picture is available:");
+              //Serial.println(String(img.getImgSize()).c_str());
 
-              if(img.getImgSize() != 0) {
-                //Serial.print("picture is available:");
-                //Serial.println(String(img.getImgSize()).c_str());
+              response = "--MOBOTIX_Fast_Serverpush\r\n"
+                        "Content-Length: " + String(img.getImgSize()) + "\r\n"
+                        "Content-Type: image/jpeg\r\n"
+                        "\r\n";
 
-                response = "--MOBOTIX_Fast_Serverpush\r\n"
-                           "Content-Length: " + String(img.getImgSize()) + "\r\n"
-                           "Content-Type: image/jpeg\r\n"
-                           "\r\n";
-
-                ATCMD_RESP_E err = AtCmd_SendBulkData( remote_cid, response.c_str(), response.length() );
-
-                size_t sent_size = 0;
-                for (size_t sent_size = 0; sent_size < img.getImgSize();) {
-                  size_t send_size = min(img.getImgSize() - sent_size, MAX_RECEIVED_DATA - 100);
-
-                  ATCMD_RESP_E err = AtCmd_SendBulkData( remote_cid, (uint8_t *)(img.getImgBuff() + sent_size), send_size );
-                  if (ATCMD_RESP_OK == err) {
+              gs2200.write(remote_cid, (const uint8_t*)response.c_str(), response.length());
+              size_t sent_size = 0;
+              for (sent_size = 0; sent_size < img.getImgSize();) {
+                size_t send_size = min(img.getImgSize() - sent_size, MAX_RECEIVED_DATA - 100);
+                bool result = false;
+                do {
+                  result = gs2200.write(remote_cid, (uint8_t *)(img.getImgBuff() + sent_size), send_size);
+                  if (true == result) {
                     sent_size += send_size;
                   } else {
-                    ConsolePrintf( "Send Bulk Error, %d\n", err );
-                    delay(2000);
-                    return;
+                    ConsolePrintf("Send Bulk Error, retry...\n");
+                    delay(100);
                   }
-                  delay(30);
-                }
-
-                one_after = millis();
-                ConsolePrintf( "Send:%dms\n", one_after - one_before );
-
-              } else {
-                String response = "HTTP/1.1 404 Not Found";
-                ATCMD_RESP_E err = AtCmd_SendBulkData( remote_cid, response.c_str(), response.length() );
-                if (ATCMD_RESP_OK != err) {
-                  ConsolePrintf( "Send Bulk Error, %d\n", err );
-                  delay(2000);
-                  return;
-                }
+                } while (true != result);
+                delay(30);
               }
 
-              response = "\r\n";
-              ATCMD_RESP_E err = AtCmd_SendBulkData( remote_cid, response.c_str(), response.length() );
+              one_after = millis();
+              ConsolePrintf( "Send:%dms\n", one_after - one_before );
 
-              sleep(g_interval_times);
-              WiFi_InitESCBuffer();
+            } else {
+              String response = "HTTP/1.1 404 Not Found";
+              if (true != gs2200.write(remote_cid, (const uint8_t*)response.c_str(), response.length())) {
+                delay(2000);
+                return;
+              }
             }
 
-          } else {
-            // send HTTP Response
-            String response = "HTTP/1.1 404 Not Found";
-            ATCMD_RESP_E err = AtCmd_SendBulkData( remote_cid, response.c_str(), response.length() );
-            if (ATCMD_RESP_OK != err) {
-              ConsolePrintf( "Send Bulk Error, %d\n", err );
-              delay(2000);
-              return;
-            }
+            response = "\r\n";
+            gs2200.write(remote_cid, (const uint8_t*)response.c_str(), response.length());
+
+            sleep(g_interval_times);
+            WiFi_InitESCBuffer();
+          }
+
+        } else {
+          // send HTTP Response
+          String response = "HTTP/1.1 404 Not Found";
+          if (true != gs2200.write(remote_cid, (const uint8_t*)response.c_str(), response.length())) {
+            delay(2000);
+            return;
           }
         }
-
         WiFi_InitESCBuffer();
-
       }
     }
   }

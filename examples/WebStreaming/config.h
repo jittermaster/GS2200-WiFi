@@ -24,6 +24,6 @@
 #define  PASSPHRASE     "123456789"
 #define  AP_CHANNEL     6
 
-#define  TCPSRVR_PORT   "10001"
+#define  TCPSRVR_PORT   "80"
 
 #endif /*_CONFIG_H_*/
