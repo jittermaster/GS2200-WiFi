@@ -35,10 +35,10 @@ class AmbientGs2200
 {
 public:
 
-  AmbientGs2200(){}
+  AmbientGs2200(TelitWiFi* wifi) : mWifi(wifi) {}
   ~AmbientGs2200(){}
 
-  bool begin(TelitWiFi* wifi, uint16_t channelId, const String& writeKey);
+  bool begin(uint16_t channelId, const String& writeKey);
   bool connect(char* host, int port);
   bool set(int field, const char * data);
   bool set(int field, double data);

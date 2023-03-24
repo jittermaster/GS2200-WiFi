@@ -29,7 +29,7 @@ static const String writeKey  = "xxxxxxxxxxxxx"; // Please write your Ambient Wr
 TelitWiFi gs2200;
 TWIFI_Params gsparams = { ATCMD_MODE_STATION, ATCMD_PSAVE_DEFAULT };
 
-AmbientGs2200 theAmbientGs2200;
+AmbientGs2200 theAmbientGs2200(&gs2200);
 
 void setup()
 {
@@ -43,7 +43,7 @@ void setup()
   digitalWrite( LED0, HIGH );
 
   /* WiFi Module Initialize */
-  Init_GS2200_SPI();
+  Init_GS2200_SPI_type(iS110B_TypeC);
 
   if( gs2200.begin( gsparams ) ){
     Serial.println( "GS2200 Initilization Fails" );
@@ -61,7 +61,7 @@ void setup()
 
   Serial.println(F("GS2200 Initialized"));
 
-  theAmbientGs2200.begin(&gs2200, channelId, writeKey);
+  theAmbientGs2200.begin(channelId, writeKey);
 
   Serial.println(F("Ambient Initialized"));
 }

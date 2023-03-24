@@ -39,13 +39,12 @@ uint8_t* ESCBuffer_p;
 extern uint8_t ESCBuffer[];
 extern uint32_t ESCBufferCnt;
 
-bool AmbientGs2200::begin(TelitWiFi* wifi, uint16_t id, const String& writeKey)
+bool AmbientGs2200::begin(uint16_t id, const String& writeKey)
 {
 #ifdef AMBIENT_DEBUG
     Serial.println("Initialize Ambient");
 #endif
 
-  mWifi = wifi;
   mCid = ATCMD_INVALID_CID;
 
   if (sizeof(writeKey) > AMBIENT_WRITEKEY_SIZE) {
@@ -139,10 +138,12 @@ bool AmbientGs2200::send()
   uint16_t length = data.length();
   printf("cid=%c\tlengh=%d\n%s\n",mCid,length,data.c_str());
   
-  if( ATCMD_RESP_OK != AtCmd_SendBulkData( mCid, data.c_str(), length )){
-    // Data is not sent, we need to re-send the data
-    ConsoleLog( "Send Error.");
-    delay(1);
+  while (1) {
+    if (true != mWifi->write(mCid, data.c_str(), length)) {
+      delay(1);
+    } else {
+      break;
+    }
   }
 
   delay(100);
@@ -150,10 +151,12 @@ bool AmbientGs2200::send()
   data = post;
   length = data.length();
 
-  if( ATCMD_RESP_OK != AtCmd_SendBulkData( mCid, data.c_str(), length )){
-    // Data is not sent, we need to re-send the data
-    ConsoleLog( "Send Error.");
-    delay(1);
+  while (1) {
+    if (true != mWifi->write(mCid, data.c_str(), length)) {
+      delay(1);
+    } else {
+      break;
+    }
   }
 
   sleep(2);
