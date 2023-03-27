@@ -106,7 +106,7 @@ void loop() {
 					Serial.println("Recieve data: " + data);
 				}
 			} else {
-        ConsolePrintf("Subscribed over for %d ms! \n", SUBSCRIBE_TIMEOUT);
+				ConsolePrintf("Subscribed over for %d ms! \n", SUBSCRIBE_TIMEOUT);
 				theMqttGs2200.stop();
 				served = false;
 				exit(0);
