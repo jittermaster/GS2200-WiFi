@@ -134,7 +134,7 @@ void loop() {
 
   ConsoleLog( "Start TCP Server");
 
-  server_cid = gs2200.start((char*)TCPSRVR_PORT);
+  server_cid = gs2200.start_tcp_server((char*)TCPSRVR_PORT);
   if (server_cid == ATCMD_INVALID_CID) {
     delay(2000);
     return;
