@@ -20,7 +20,7 @@
 #include "config.h"
 
 #define  CONSOLE_BAUDRATE  115200
-
+#define  SUBSCRIBE_TIMEOUT 30000	//ms
 /*-------------------------------------------------------------------------*
  * Globals:
  *-------------------------------------------------------------------------*/
@@ -92,16 +92,24 @@ void loop() {
 		if (true == theMqttGs2200.subscribe(&mqtt)) {
 			ConsolePrintf( "Subscribed! \n" );
 		}
+		uint64_t start = millis();
 		while (served) {
-			String data;
-			/* just in case something from GS2200 */
-			while (gs2200.available()) {
-				if (false == theMqttGs2200.receive(data)) {
-					served = false; // quite the loop
-					break;
-				}
+			if (msDelta(start) < SUBSCRIBE_TIMEOUT ) {
+				String data;
+				/* just in case something from GS2200 */
+				while (gs2200.available()) {
+					if (false == theMqttGs2200.receive(data)) {
+						served = false; // quite the loop
+						break;
+					}
 
-				Serial.println("Recieve data: " + data);
+					Serial.println("Recieve data: " + data);
+				}
+			} else {
+        ConsolePrintf("Subscribed over for %d ms! \n", SUBSCRIBE_TIMEOUT);
+				theMqttGs2200.stop();
+				served = false;
+				exit(0);
 			}
 		}
 	}

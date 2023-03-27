@@ -50,6 +50,7 @@ public:
   bool publish(MQTTGS2200_Mqtt* mqtt);
   bool subscribe(MQTTGS2200_Mqtt* mqtt);
   bool receive(String& data);
+  bool MqttGs2200::stop();
   void end(){ }
 
 private:

@@ -122,3 +122,20 @@ bool MqttGs2200::receive(String& data)
 
   return result;
 }
+
+bool MqttGs2200::stop()
+{
+  ATCMD_RESP_E resp = ATCMD_RESP_UNMATCH;
+  bool result = true;
+
+  ConsolePrintf("stop %d\n", mCid);
+  resp = AtCmd_NCLOSE(mCid);
+  if (ATCMD_RESP_OK == resp) {
+    result = true;
+  } else {
+    result = false;
+  }
+  WiFi_InitESCBuffer();
+
+  return result;
+}
