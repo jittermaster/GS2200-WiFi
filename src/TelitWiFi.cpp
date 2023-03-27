@@ -249,7 +249,7 @@ char TelitWiFi::connect(const String& ip, const String& port)
  * @param char* port - IN: Port
  * @return char cid: Channel ID
  */
-char TelitWiFi::start(char* port)
+char TelitWiFi::start_tcp_server(char* port)
 {
 	ATCMD_RESP_E resp = ATCMD_RESP_UNMATCH;
 	char cid = ATCMD_INVALID_CID;

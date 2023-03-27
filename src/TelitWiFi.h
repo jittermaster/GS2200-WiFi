@@ -67,7 +67,7 @@ public:
 	/**
 	 * Start TCP server
 	 */
-	char start(char* port);
+	char start_tcp_server(char* port);
 
 	/**
 	 * Wait for TCP client connection
