@@ -15,8 +15,6 @@
  *  Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
 */
 
-#include <GS2200Hal.h>
-#include <GS2200AtCmd.h>
 #include <TelitWiFi.h>
 #include "config.h"
 
@@ -24,8 +22,8 @@
 #define  CONSOLE_BAUDRATE  115200
 
 
-extern uint8_t ESCBuffer[];
-extern uint32_t ESCBufferCnt;
+const uint16_t RECEIVE_PACKET_SIZE = 1500;
+uint8_t Receive_Data[RECEIVE_PACKET_SIZE] = {0};
 
 TelitWiFi gs2200;
 TWIFI_Params gsparams;
@@ -45,7 +43,7 @@ void setup() {
 	Serial.begin( CONSOLE_BAUDRATE ); // talk to PC
 
 	/* Initialize SPI access of GS2200 */
-	Init_GS2200_SPI();
+	Init_GS2200_SPI_type(iS110B_TypeC);
 
 	/* Initialize AT Command Library Buffer */
 	gsparams.mode = ATCMD_MODE_LIMITED_AP;
@@ -68,61 +66,38 @@ void setup() {
 // the loop function runs over and over again forever
 void loop() {
 
-	ATCMD_RESP_E resp;
-	char server_cid = 0, remote_cid=0;
-	ATCMD_NetworkStatus networkStatus;
-	uint32_t timer=0;
+	char remote_cid = 0;
+	char server_cid = 0;
+	uint32_t timer = 5000;
 
-
-	resp = ATCMD_RESP_UNMATCH;
 	ConsoleLog( "Start TCP Server");
-	
-	resp = AtCmd_NSTCP( TCPSRVR_PORT, &server_cid);
-	if (resp != ATCMD_RESP_OK) {
-		ConsoleLog( "No Connect!" );
-		delay(2000);
-		return;
-	}
-
+	server_cid = gs2200.start_tcp_server((char*)TCPSRVR_PORT);
 	if (server_cid == ATCMD_INVALID_CID) {
-		ConsoleLog( "No CID!" );
 		delay(2000);
 		return;
 	}
-		
-	while( 1 ){
-		ConsoleLog( "Waiting for TCP Client");
 
-		if( ATCMD_RESP_TCP_SERVER_CONNECT != WaitForTCPConnection( &remote_cid, 5000 ) ){
+	while(1) {
+		ConsoleLog("Waiting for TCP Client");
+		if (true != gs2200.wait_connection(&remote_cid, timer)) {
 			continue;
 		}
 
 		ConsoleLog( "TCP Client Connected");
-		// Prepare for the next chunck of incoming data
-		WiFi_InitESCBuffer();
 		
 		// Start the echo server
-		while( 1 ){
-			while( Get_GPIO37Status() ){
-				resp = AtCmd_RecvResponse();
-				
-				if( ATCMD_RESP_BULK_DATA_RX == resp ){
-					if( Check_CID( remote_cid ) ){
-						ConsolePrintf( "Received : %s\r\n", ESCBuffer+1 );
-						if( ATCMD_RESP_OK != AtCmd_SendBulkData( remote_cid, ESCBuffer+1, ESCBufferCnt-1 ) ){
-							// Data is not sent, we need to re-send the data
-							delay(10);
-						}
-						
+		while (1) {
+			if (gs2200.available()) {
+				if (0 < gs2200.read(remote_cid, Receive_Data, RECEIVE_PACKET_SIZE)) {
+					ConsolePrintf("Received : %s\r\n", Receive_Data);
+					if (true != gs2200.write(remote_cid, Receive_Data, strlen((char*)Receive_Data))) {
+						// Data is not sent, we need to re-send the data
+						delay(10);
+						ConsolePrintf("Sent Error : %s\r\n", Receive_Data);
 					}
-					
 					WiFi_InitESCBuffer();
 				}
-				
 			}
-			
 		}
-		
 	}
 }
-

@@ -245,6 +245,61 @@ char TelitWiFi::connect(const String& ip, const String& port)
 }
 
 /**
+ * @brief Start TCP server
+ * @param char* port - IN: Port
+ * @return char cid: Channel ID
+ */
+char TelitWiFi::start_tcp_server(char* port)
+{
+	ATCMD_RESP_E resp = ATCMD_RESP_UNMATCH;
+	char cid = ATCMD_INVALID_CID;
+	ATCMD_NetworkStatus networkStatus;
+
+	WiFi_InitESCBuffer();
+
+	resp = AtCmd_NSTCP(port, &cid);
+	if (resp != ATCMD_RESP_OK) {
+		ConsoleLog( "No Connect!" );
+		delay(2000);
+		return cid;
+	}
+
+	if (cid == ATCMD_INVALID_CID) {
+		ConsoleLog( "No CID!" );
+		delay(2000);
+		return cid;
+	}
+
+	do {
+		resp = AtCmd_NSTAT(&networkStatus);
+	} while (ATCMD_RESP_OK != resp);
+
+	ConsoleLog( "TCP server Started" );
+	ConsolePrintf("IP: %d.%d.%d.%d\r\n",
+	              networkStatus.addr.ipv4[0], networkStatus.addr.ipv4[1], networkStatus.addr.ipv4[2], networkStatus.addr.ipv4[3]);
+	return cid;
+}
+
+/**
+ * @brief Wait for TCP client connection
+ * @param char cid: Channel ID
+ *
+ */
+bool TelitWiFi::wait_connection(char *cid, uint32_t timeout)
+{
+	bool result = false;
+	ATCMD_RESP_E resp = ATCMD_RESP_UNMATCH;
+
+	resp = WaitForTCPConnection(cid, timeout);
+	if (ATCMD_RESP_TCP_SERVER_CONNECT != resp) {
+		result = false;
+	} else {
+		result = true;
+	}
+	return result;
+}
+
+/**
  * @brief Connect UDP server
  * @param const String& ip - IN: IP
  *        const String& port - IN: Port
@@ -338,9 +393,12 @@ bool TelitWiFi::connected(char cid)
  */
 bool TelitWiFi::write(char cid, const uint8_t* data, uint16_t length)
 {
-	if( ATCMD_RESP_OK != AtCmd_SendBulkData( cid, data, length )){
+	ATCMD_RESP_E resp;
+
+	resp = AtCmd_SendBulkData(cid, data, length);
+	if( ATCMD_RESP_OK != resp){
 		// Data is not sent, we need to re-send the data
-		gs2200_printf( "Send Error.");
+		gs2200_printf( "Send Error.resp = %d\n", resp);
 		return false;
 	}
 
