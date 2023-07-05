@@ -265,6 +265,7 @@ ATCMD_RESP_E AtCmd_APCLIENTINFO(void);
 #ifndef SUBCORE
 ATCMD_RESP_E AtCmd_TCERTADD( char* name, int format, int location, File fp );
 #endif
+ATCMD_RESP_E AtCmd_TCERTADD( char* name, int format, int location, uint8_t* ptr, int size );
 ATCMD_RESP_E AtCmd_SETTIME(char* time);
 ATCMD_RESP_E AtCmd_SSLCONF(int size);
 ATCMD_RESP_E AtCmd_LOGLVL(int level);

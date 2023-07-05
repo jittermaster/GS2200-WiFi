@@ -39,7 +39,10 @@ public:
   ~HttpGs2200(){}
 
   bool begin(HTTPGS2200_HostParams* params);
+#ifndef SUBCORE
   bool set_cert(char* name, char* time_string, int format, int location, File *fp);
+#endif
+  bool set_cert(char* name, char* time_string, int format, int location, uint8*_t ptr, int size );
   bool connect();
   void config(ATCMD_HTTP_HEADER_E param, const char *val);
   bool send(ATCMD_HTTP_METHOD_E type, uint8_t timeout, const char *page, const char *msg, uint32_t size);

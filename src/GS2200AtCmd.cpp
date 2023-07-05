@@ -1967,6 +1967,42 @@ ATCMD_RESP_E AtCmd_TCERTADD( char* name, int format, int location, File fp )
 #endif 
 
 /*---------------------------------------------------------------------------*
+ * AtCmd_TCERTADD
+ *---------------------------------------------------------------------------*/
+ATCMD_RESP_E AtCmd_TCERTADD( char* name, int format, int location, uint8_t* ptr, int size )
+{
+	ATCMD_RESP_E resp=ATCMD_RESP_UNMATCH;
+	SPI_RESP_STATUS_E s;
+	char cmd[80];
+	char *result;
+
+	if( size < TXBUFFER_SIZE - 2 ){
+		sprintf( cmd, "AT+TCERTADD=%s,%d,%d,%d\r\n", name, format, size, location );
+		if( ATCMD_RESP_OK == AtCmd_SendCommand( cmd ) ){
+			TxBuffer[0] = ATCMD_ESC;
+			TxBuffer[1] = 'W';
+			memcpy(&TxBuffer[2], ptr, size);
+			s = WiFi_Write( (char *)TxBuffer, size+2 );
+
+			if( s == SPI_RESP_STATUS_OK ){
+		    	puts("ATCMD_RESP_OK");
+				resp = ATCMD_RESP_OK;
+			}else{
+		    	puts("ATCMD_RESP_SPI_ERROR");
+				resp = ATCMD_RESP_SPI_ERROR;
+			}
+			return resp;
+		}
+	} else {
+		puts("ATCMD_RESP_INPUT_TOO_LONG");
+		return ATCMD_RESP_INPUT_TOO_LONG;
+	}
+
+	return AtCmd_RecvResponse();
+
+}
+
+/*---------------------------------------------------------------------------*
  * AtCmd_SETTIME
  *---------------------------------------------------------------------------*/
 ATCMD_RESP_E AtCmd_SETTIME(char* time)

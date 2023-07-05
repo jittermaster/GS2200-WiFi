@@ -47,14 +47,28 @@ bool HttpGs2200::begin(HTTPGS2200_HostParams* params)
   return true;
 }
 
-
+#ifndef SUBCORE
 bool HttpGs2200::set_cert(char* name, char* time_string, int format, int location, File *fp)
 {
 	bool result = true;
 
 	AtCmd_TCERTADD(name, format, location, *fp); 
 
-  AtCmd_SETTIME(time_string);
+    AtCmd_SETTIME(time_string);
+	AtCmd_SSLCONF(100);
+	AtCmd_LOGLVL(2);
+
+  return result;
+}
+#endif
+
+bool HttpGs2200::set_cert(char* name, char* time_string, int format, int location, uint8_t* ptr, int size )
+{
+	bool result = true;
+
+	AtCmd_TCERTADD(name, format, location, ptr, size); 
+
+    AtCmd_SETTIME(time_string);
 	AtCmd_SSLCONF(100);
 	AtCmd_LOGLVL(2);
 
