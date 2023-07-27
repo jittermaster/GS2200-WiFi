@@ -39,7 +39,7 @@ uint8_t* ESCBuffer_p;
 extern uint8_t ESCBuffer[];
 extern uint32_t ESCBufferCnt;
 
-bool AmbientGs2200::begin(uint16_t id, const String& writeKey)
+bool AmbientGs2200::begin(uint32_t id, const String& writeKey)
 {
 #ifdef AMBIENT_DEBUG
     Serial.println("Initialize Ambient");

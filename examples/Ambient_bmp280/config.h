@@ -23,7 +23,7 @@
 #define  AP_SSID        "AP_SSID_NAME"
 #define  PASSPHRASE     "123456789"
 
-const uint16_t channelId = 00000;      // Please write your Ambient ID.
+const uint32_t channelId = 00000;      // Please write your Ambient ID.
 const String writeKey = "xxxxxxxxxxxxxx"; // Please write your Ambient Key.
 
 #endif /*_CONFIG_H_*/

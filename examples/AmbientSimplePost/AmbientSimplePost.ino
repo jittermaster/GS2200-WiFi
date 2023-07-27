@@ -23,7 +23,7 @@
 static String apSsid = "xxxxxxx";
 static String apPass = "xxxxxxx";
 
-static const uint16_t channelId = 00000; // Please write your Ambient ID.
+static const uint32_t channelId = 00000; // Please write your Ambient ID.
 static const String writeKey  = "xxxxxxxxxxxxx"; // Please write your Ambient Write Key
 
 TelitWiFi gs2200;

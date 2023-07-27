@@ -38,7 +38,7 @@ public:
   AmbientGs2200(TelitWiFi* wifi) : mWifi(wifi) {}
   ~AmbientGs2200(){}
 
-  bool begin(uint16_t channelId, const String& writeKey);
+  bool begin(uint32_t channelId, const String& writeKey);
   bool connect(char* host, int port);
   bool set(int field, const char * data);
   bool set(int field, double data);
@@ -52,7 +52,7 @@ private:
   TelitWiFi* mWifi;
   char mCid;
 
-  uint16_t mChannelId;
+  uint32_t mChannelId;
   String mWriteKey;
 
   struct {
