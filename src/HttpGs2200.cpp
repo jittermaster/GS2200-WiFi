@@ -19,7 +19,7 @@
 
 #include "HttpGs2200.h"
 
-#define ENABLE_HTTP_DEBUG
+//#define ENABLE_HTTP_DEBUG
 
 #ifdef ENABLE_HTTP_DEBUG
 #define HTTP_DEBUG(...)    \
@@ -135,13 +135,21 @@ bool HttpGs2200::send(ATCMD_HTTP_METHOD_E type, uint8_t timeout, const char *pag
 {
 	ATCMD_RESP_E resp = ATCMD_RESP_UNMATCH;
 	bool result = false;
+	int retry = 10;
 	while (1) {
 		resp = AtCmd_HTTPSEND(mCid, type, timeout, page, msg, size);
 		if (ATCMD_RESP_OK == resp || ATCMD_RESP_BULK_DATA_RX == resp) {
 			result = true;
 			break;
 		} else {
-			continue;
+			if(retry > 0){
+				retry--;
+				sleep(1);
+				continue;
+			}else{
+				result = false;
+				break;
+			}
 		}
 	}
 	return result;
@@ -181,6 +189,7 @@ bool HttpGs2200::receive(uint64_t timeout)
 				result = true;
 				break;
 			} else {
+				printf("resp=%d\n",resp);
 				result = false;
 				break;
 			}

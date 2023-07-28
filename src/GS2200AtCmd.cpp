@@ -27,7 +27,7 @@
 /*-------------------------------------------------------------------------*
  * Constants:
  *-------------------------------------------------------------------------*/
-#define SPI_MAX_SIZE   1400
+#define SPI_MAX_SIZE   1500
 #define TXBUFFER_SIZE  SPI_MAX_SIZE
 #define RXBUFFER_SIZE  1500
 
