@@ -37,8 +37,6 @@ void setup() {
 	digitalWrite( LED0, LOW );   // turn the LED off (LOW is the voltage level)
 	Serial.begin( CONSOLE_BAUDRATE ); // talk to PC
 
-	/* Initialize AT Command Library Buffer */
-	AtCmd_Init();
 	/* Initialize SPI access of GS2200 */
 	Init_GS2200_SPI_type(iS110B_TypeC);
 

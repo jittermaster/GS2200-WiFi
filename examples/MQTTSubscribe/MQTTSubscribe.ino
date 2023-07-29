@@ -20,7 +20,7 @@
 #include "config.h"
 
 #define  CONSOLE_BAUDRATE  115200
-#define  SUBSCRIBE_TIMEOUT 30000	//ms
+#define  SUBSCRIBE_TIMEOUT 60000	//ms
 /*-------------------------------------------------------------------------*
  * Globals:
  *-------------------------------------------------------------------------*/
@@ -36,8 +36,6 @@ void setup() {
 	digitalWrite( LED0, LOW );   // turn the LED off (LOW is the voltage level)
 	Serial.begin( CONSOLE_BAUDRATE ); // talk to PC
 
-	/* Initialize AT Command Library Buffer */
-	AtCmd_Init();
 	/* Initialize SPI access of GS2200 */
 	Init_GS2200_SPI_type(iS110B_TypeC);
 
@@ -78,20 +76,22 @@ void loop() {
 		if (false == theMqttGs2200.connect()) {
 			return;
 		}
-		served = true;
-	}
-	else {
+
 		ConsoleLog( "Start to receive MQTT Message");
 		// Prepare for the next chunck of incoming data
 		WiFi_InitESCBuffer();
-		
+
 		// Start the loop to receive the data
 		strncpy(mqtt.params.topic, MQTT_TOPIC , sizeof(mqtt.params.topic));
 		mqtt.params.QoS = 0;
 		mqtt.params.retain = 0;
 		if (true == theMqttGs2200.subscribe(&mqtt)) {
 			ConsolePrintf( "Subscribed! \n" );
-		}
+		} 
+
+		served = true;
+	}
+	else {
 		uint64_t start = millis();
 		while (served) {
 			if (msDelta(start) < SUBSCRIBE_TIMEOUT ) {
@@ -105,6 +105,7 @@ void loop() {
 
 					Serial.println("Recieve data: " + data);
 				}
+				start = millis();
 			} else {
 				ConsolePrintf("Subscribed over for %d ms! \n", SUBSCRIBE_TIMEOUT);
 				theMqttGs2200.stop();
