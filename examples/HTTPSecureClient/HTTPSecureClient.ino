@@ -41,8 +41,6 @@ HttpGs2200 theHttpGs2200(&gs2200);
 HTTPGS2200_HostParams hostParams;
 SDClass theSD;
 
-int count = 0;
-
 void parse_httpresponse(char *message)
 {
 	char *p;
@@ -113,6 +111,7 @@ void setup() {
 void loop() {
 	httpStat = GET;
 	bool result = false;
+	static int count = 0;
 
 	while (1) {
 		switch (httpStat) {

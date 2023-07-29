@@ -37,8 +37,6 @@ TWIFI_Params gsparams;
 HttpGs2200 theHttpGs2200(&gs2200);
 HTTPGS2200_HostParams hostParams;
 
-int count = 0;
-
 void parse_httpresponse(char *message)
 {
 	char *p;
@@ -92,6 +90,7 @@ void setup() {
 void loop() {
 	httpStat = POST;
 	bool result = false;
+	static int count = 0;
 
 	while (1) {
 		switch (httpStat) {
