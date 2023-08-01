@@ -15,17 +15,17 @@
  *  Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
 */
 
+#ifndef _TELITWIFI_H_
+#define _TELITWIFI_H_
+
 #include <Arduino.h>
 #include <GS2200AtCmd.h>
+#include <GS2200Hal.h>
 
 typedef struct {
 	ATCMD_MODE_E  mode;
 	ATCMD_PSAVE_E psave;
 } TWIFI_Params;
-
-
-#define OK    0
-#define FAIL  1
 
 
 /**
@@ -37,6 +37,13 @@ typedef struct {
 class TelitWiFi
 {
 public:
+
+	typedef enum
+	{
+		OK = 0,
+		FAIL = 1,
+	} TelitResult;
+
 	TelitWiFi();
 
 	~TelitWiFi();
@@ -45,11 +52,57 @@ public:
 	 *  GS2000 Initialization 
 	 */
 	int begin(TWIFI_Params params);
-	
+
 	/**
 	 *  AP association (station mode), AP creation (Limited-AP mode)
 	 */
-	int connect(const char *ssid, const char *passphrase);
-	int connect(const char *ssid, const char *passphrase, uint8_t channel);
+	int activate_station(const String& ssid, const String& passphrase);
+	int activate_ap(const String& ssid, const String& passphrase, uint8_t channel);
+
+	/**
+	 * Connect TCP server
+	 */
+	char connect(const String& ip, const String& port);
+
+	/**
+	 * Start TCP server
+	 */
+	char start_tcp_server(char* port);
+
+	/**
+	 * Wait for TCP client connection
+	 */
+	bool wait_connection(char *cid, uint32_t timeout);
+
+	/**
+	 * Connect UDP server
+	 */
+	char connectUDP(const String& ip, const String& port, const String& srcPort);
+	/**
+	 * Connect TCP server
+	 */
+	bool connected(char cid);
+
+	/**
+	 * Disonnect to TCP server
+	 */
+	void stop(char cid);
+
+	/**
+	 * Send data to TCP server
+	 */
+	bool write(char cid, const uint8_t* data, uint16_t length);
+
+	/**
+	 *  Available TCP read
+	 */
+	bool available();
+
+	/**
+	 * Read data from TCP server
+	 */
+	int read(char cid, uint8_t* data, int length);
 
 };
+
+#endif /*_TELITWIFI_H_*/

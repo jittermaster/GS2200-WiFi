@@ -27,14 +27,14 @@
 /*-------------------------------------------------------------------------*
  * Constants:
  *-------------------------------------------------------------------------*/
-#define SPI_MAX_SIZE   1400
+#define SPI_MAX_SIZE   1500
 #define TXBUFFER_SIZE  SPI_MAX_SIZE
 #define RXBUFFER_SIZE  1500
 
 #define NUM_OF_RESPBUFFER  32
 #define WS_MAXENTRIES      (NUM_OF_RESPBUFFER - 1)
 
-#define ATCMD_DEBUG_ENABLE
+//#define ATCMD_DEBUG_ENABLE
 
 
 /*-------------------------------------------------------------------------*
@@ -502,7 +502,7 @@ ATCMD_RESP_E AtCmd_WSEC(ATCMD_SECURITYMODE_E security)
  * Inputs: char *pSsid -- SSID (1 to 32 characters)
  *         char *pPsk -- Passphrase (8 to 63 characters)
  *---------------------------------------------------------------------------*/
-ATCMD_RESP_E AtCmd_WPAPSK(char *pSsid, char *pPsk)
+ATCMD_RESP_E AtCmd_WPAPSK(const char *pSsid, const char *pPsk)
 {
 	char cmd[60];
 	
@@ -521,7 +521,7 @@ ATCMD_RESP_E AtCmd_WPAPSK(char *pSsid, char *pPsk)
  * Outputs:
  *      ATCMD_RESP_E -- error code
  *---------------------------------------------------------------------------*/
-ATCMD_RESP_E AtCmd_WA(char *pSsid, char *pBssid, uint8_t channel)
+ATCMD_RESP_E AtCmd_WA(const char *pSsid, const char *pBssid, uint8_t channel)
 {
 	char cmd[100];
 
@@ -745,7 +745,7 @@ ATCMD_RESP_E AtCmd_NSTAT(ATCMD_NetworkStatus *pStatus)
  *         char *port -- Port string
  *         uint8_t *cid -- Client CID if connection is established
  *---------------------------------------------------------------------------*/
-ATCMD_RESP_E AtCmd_NCTCP( char *destAddress, char *port, char *cid)
+ATCMD_RESP_E AtCmd_NCTCP( const char *destAddress, const char *port, char *cid)
 {
 	char cmd[40];
 	ATCMD_RESP_E resp;
@@ -789,7 +789,7 @@ ATCMD_RESP_E AtCmd_NCTCP( char *destAddress, char *port, char *cid)
  *         char *srcPort -- Client port string
  *         uint8_t *cid -- Client CID
  *---------------------------------------------------------------------------*/
-ATCMD_RESP_E AtCmd_NCUDP(char *destAddress, char *port, char *srcPort, uint8_t *cid )
+ATCMD_RESP_E AtCmd_NCUDP(const char *destAddress, const char *port, const char *srcPort, char *cid )
 {
 	char cmd[60];
 	ATCMD_RESP_E  resp;
@@ -909,7 +909,7 @@ ATCMD_RESP_E AtCmd_PSDPSLEEP(uint32_t timeout)
 	char cmd[30];
 
 	if( timeout ){
-		sprintf(cmd, "AT+PSDPSLEEP=%d\r\n", timeout);
+		sprintf(cmd, "AT+PSDPSLEEP=%ld\r\n", timeout);
 /*
   Note:
   GS2200 returns the response when timer expired.
@@ -944,7 +944,7 @@ ATCMD_RESP_E AtCmd_PSSTBY(uint32_t x, uint32_t delay, uint8_t alarm1_pol, uint8_
 {
 	char cmd[80];
 
-	sprintf(cmd, "AT+PSSTBY=%d,%d,%d,%d\r\n", x, delay, alarm1_pol, alarm2_pol );
+	sprintf(cmd, "AT+PSSTBY=%ld,%ld,%d,%d\r\n", x, delay, alarm1_pol, alarm2_pol );
 /*
   Note:
   GS2200 returns the response when exiting from the Standby mode.
@@ -1235,6 +1235,7 @@ ATCMD_RESP_E AtCmd_ParseRcvData(uint8_t *ptr)
 		else{
 			/* Now read actual data */
 			WiFi_StoreESCBuffer( *ptr );
+			resp = ATCMD_RESP_BULK_DATA_RX;
 			dataLen--;
 			if( !dataLen ){
 				rcv_state = ATCMD_FSM_START;
@@ -1550,8 +1551,107 @@ ATCMD_RESP_E AtCmd_MQTTPUBLISH( char cid, ATCMD_MQTTparams mqtt )
 	else
 		return ATCMD_RESP_INPUT_TOO_LONG;
 
+	return resp;
 }
 
+/*---------------------------------------------------------------------------*
+ * AtCmd_MQTTSUBSCRIBE
+ *---------------------------------------------------------------------------*
+ * Description: Send MQTT application message
+ * Inputs: char cid -- Connection ID of MQTT
+ *         char *topic -- TOPIC on MQTT broker
+ *         ATCMD_MQTTparams mqtt -- structure of {length, QoS, retain, message}
+ * Note: Only ASCII message is supported
+ *---------------------------------------------------------------------------*/
+ATCMD_RESP_E AtCmd_MQTTSUBSCRIBE( char cid, ATCMD_MQTTparams mqtt )
+{
+	#define BUFLEN 180
+
+	char cmd[BUFLEN];
+	ATCMD_RESP_E resp=ATCMD_RESP_UNMATCH;
+	SPI_RESP_STATUS_E s;
+
+
+	if( strlen(mqtt.topic) < BUFLEN - 28 ){
+		sprintf( cmd, "AT+MQTTSUBSCRIBE=%c,%s,%d\r\n", cid, mqtt.topic, mqtt.QoS );
+		if( ATCMD_RESP_OK == AtCmd_SendCommand( cmd ) ){
+			if( s == SPI_RESP_STATUS_OK )
+				resp = ATCMD_RESP_OK;
+			else
+				resp = ATCMD_RESP_SPI_ERROR;
+
+			return resp;
+		}
+	}
+	else
+		return ATCMD_RESP_INPUT_TOO_LONG;
+
+	return resp;
+}
+
+/*---------------------------------------------------------------------------*
+ * AtCmd_RecieveMQTTData
+ *---------------------------------------------------------------------------*
+ * Description: Recieve MQTT Subscribed data
+ * Inputs: String& data -- MQTT Subscribed data
+ *---------------------------------------------------------------------------*/
+ATCMD_RESP_E  AtCmd_RecieveMQTTData( String& data )
+{
+	SPI_RESP_STATUS_E s;
+	ATCMD_RESP_E resp;
+	uint16_t rxDataLen;
+
+	/* Reset the message ID */
+	resp = ATCMD_RESP_UNMATCH;
+
+	s = WiFi_Read( RxBuffer, &rxDataLen );
+
+	if( s == SPI_RESP_STATUS_TIMEOUT ){
+#ifdef ATCMD_DEBUG_ENABLE
+		ConsoleLog("SPI: Timeout");
+#endif
+		return ATCMD_RESP_TIMEOUT;
+	}
+
+	if( s == SPI_RESP_STATUS_ERROR ){
+#ifdef ATCMD_DEBUG_ENABLE
+		/* Zero data length, this should not happen */
+		ConsoleLog("GS2200 responds Zero data length");
+#endif
+		return ATCMD_RESP_ERROR;
+	}
+
+	char* p = RxBuffer;
+	while( rxDataLen-- ){
+		/* Parse the received data */
+		resp = AtCmd_ParseRcvData( p++ );
+	}
+
+
+	if(resp == ATCMD_RESP_DISCONNECT ){
+		return resp;
+	}
+
+	String rxdata = RxBuffer;
+	String size = rxdata.substring( (1+1+1+1+4), (1+1+1+1+4+4) );
+	String topic = rxdata.substring( (1+1+1+1+4+4), rxdata.indexOf(' ') );
+	data = rxdata.substring( rxdata.indexOf(' ')+1, rxdata.indexOf(' ')+1+size.toInt() );
+
+#ifdef ATCMD_DEBUG_ENABLE
+
+	Serial.println();
+	Serial.print("Recieve topic: ");
+ 	Serial.println(topic);
+	Serial.print("Recieve size: ");
+	Serial.println(size);
+	Serial.print("Recieve data: ");
+	Serial.println(data);
+
+#endif
+
+	return ATCMD_RESP_OK;
+
+}
 
 /*---------------------------------  HTTP Communication  --------------------------------------*/
 
@@ -1563,13 +1663,53 @@ ATCMD_RESP_E AtCmd_MQTTPUBLISH( char cid, ATCMD_MQTTparams mqtt )
  *         char *host -- HTTP server name or IP address
  *         char *port -- HTTP port number
  *---------------------------------------------------------------------------*/
-ATCMD_RESP_E AtCmd_HTTPOPEN( char *cid, char *host, char *port )
+ATCMD_RESP_E AtCmd_HTTPOPEN( char *cid, const char *host, const char *port )
 {
 	ATCMD_RESP_E resp=ATCMD_RESP_UNMATCH;
 	char cmd[80];
 	char *result;
 	
 	sprintf( cmd, "AT+HTTPOPEN=%s,%s\r\n", host, port );
+	resp = AtCmd_SendCommand( cmd );
+
+	if( resp == ATCMD_RESP_OK && RespBuffer_Index ) {
+		if( (result = strstr( (const char*)RespBuffer[0], "IP")) != NULL) {
+			/* CID must be in the second line of the response */
+			*cid = Search_CID( RespBuffer[1] );
+#ifdef ATCMD_DEBUG_ENABLE
+			ConsolePrintf( "HTTP Server CID: %c\r\n", *cid );
+			ConsolePrintf( "HTTP Server IP Address: %s\r\n", result+3 );
+#endif    
+		}
+		else{
+			/* IP address is provided */
+			/* CID must be in the first line of the response */
+			*cid = Search_CID( RespBuffer[0] );
+		}
+	}
+
+	if( *cid == ATCMD_INVALID_CID )
+		resp = ATCMD_RESP_INVALID_CID;
+
+	return resp;
+}
+
+/*---------------------------------------------------------------------------*
+ * AtCmd_HTTPSOPEN
+ *---------------------------------------------------------------------------*
+ * Description: Open an HTTPS client connection
+ * Inputs: char *cid -- Connection ID is stored, if connection established
+ *         char *host -- HTTP server name or IP address
+ *         char *port -- HTTP port number
+ *         const char *port -- CA Name
+ *---------------------------------------------------------------------------*/
+ATCMD_RESP_E AtCmd_HTTPSOPEN( char *cid, const char *host, const char *port, const char *ca_name)
+{
+	ATCMD_RESP_E resp=ATCMD_RESP_UNMATCH;
+	char cmd[80];
+	char *result;
+	
+	sprintf( cmd, "AT+HTTPOPEN=%s,%s,1,%s\r\n", host, port,ca_name );
 	resp = AtCmd_SendCommand( cmd );
 
 	if( resp == ATCMD_RESP_OK && RespBuffer_Index ) {
@@ -1602,11 +1742,10 @@ ATCMD_RESP_E AtCmd_HTTPOPEN( char *cid, char *host, char *port )
  * Inputs: ATCMD_HTTP_HEADER param -- HTTP header parameter
  *         char *val -- value of header
  *---------------------------------------------------------------------------*/
-ATCMD_RESP_E AtCmd_HTTPCONF( ATCMD_HTTP_HEADER_E param, char *val )
+ATCMD_RESP_E AtCmd_HTTPCONF( ATCMD_HTTP_HEADER_E param, const char *val )
 {
 	ATCMD_RESP_E resp=ATCMD_RESP_UNMATCH;
 	char cmd[120];
-	char *result;
 	
 	sprintf( cmd, "AT+HTTPCONF=%d,%s\r\n", param, val );
 	resp = AtCmd_SendCommand( cmd );
@@ -1627,7 +1766,7 @@ ATCMD_RESP_E AtCmd_HTTPCONF( ATCMD_HTTP_HEADER_E param, char *val )
  * Note: Support GET, POST method
  * Note: Support only ASCII message
  *---------------------------------------------------------------------------*/
-ATCMD_RESP_E AtCmd_HTTPSEND( char cid, ATCMD_HTTP_METHOD_E type, uint8_t timeout, char *page, char *msg, uint32_t size )
+ATCMD_RESP_E AtCmd_HTTPSEND( char cid, ATCMD_HTTP_METHOD_E type, uint8_t timeout, const char *page, const char *msg, uint32_t size )
 {
 	char cmd[120];
 	ATCMD_RESP_E resp=ATCMD_RESP_UNMATCH;
@@ -1638,7 +1777,7 @@ ATCMD_RESP_E AtCmd_HTTPSEND( char cid, ATCMD_HTTP_METHOD_E type, uint8_t timeout
 		return AtCmd_SendCommand( cmd );
 	}
 	else if( HTTP_METHOD_POST==type ){
-		sprintf( cmd, "AT+HTTPSEND=%c,%d,%d,%s,%d\r\n", cid, type, timeout, page, size );
+		sprintf( cmd, "AT+HTTPSEND=%c,%d,%d,%s,%ld\r\n", cid, type, timeout, page, size );
 		if( ATCMD_RESP_OK == AtCmd_SendCommand( cmd ) ){
 			/* HTTP POST : <Esc><'H'><cid><Data> */
 			
@@ -1693,7 +1832,9 @@ ATCMD_RESP_E AtCmd_HTTPSEND( char cid, ATCMD_HTTP_METHOD_E type, uint8_t timeout
 	else{
 		ConsolePrintf( "Not support HTTP method : %d\r\n", type );
 		return ATCMD_RESP_ERROR;
-	}			
+	}
+	
+	return resp;
 
 }
 
@@ -1780,6 +1921,120 @@ ATCMD_RESP_E AtCmd_APCLIENTINFO(void)
 		}
 	}
 
+	return resp;
+}
+
+#ifndef SUBCORE
+/*---------------------------------------------------------------------------*
+ * AtCmd_TCERTADD
+ *---------------------------------------------------------------------------*/
+ATCMD_RESP_E AtCmd_TCERTADD( char* name, int format, int location, File fp )
+{
+	ATCMD_RESP_E resp=ATCMD_RESP_UNMATCH;
+	SPI_RESP_STATUS_E s;
+	char cmd[80];
+	char *result;
+	
+	if (!fp.available())
+		return ATCMD_RESP_INVALID_INPUT;
+
+	
+	if( fp.size() < TXBUFFER_SIZE - 2 ){
+		sprintf( cmd, "AT+TCERTADD=%s,%d,%d,%d\r\n", name, format, fp.size(), location );
+		if( ATCMD_RESP_OK == AtCmd_SendCommand( cmd ) ){
+			TxBuffer[0] = ATCMD_ESC;
+			TxBuffer[1] = 'W';
+			fp.read(&TxBuffer[2], fp.size());
+			s = WiFi_Write( (char *)TxBuffer, fp.size()+2 );
+
+			if( s == SPI_RESP_STATUS_OK ){
+		    	puts("ATCMD_RESP_OK");
+				resp = ATCMD_RESP_OK;
+			}else{
+		    	puts("ATCMD_RESP_SPI_ERROR");
+				resp = ATCMD_RESP_SPI_ERROR;
+			}
+			return resp;
+		}
+	} else {
+		puts("ATCMD_RESP_INPUT_TOO_LONG");
+		return ATCMD_RESP_INPUT_TOO_LONG;
+	}
+
+	return AtCmd_RecvResponse();
+
+}
+#endif 
+
+/*---------------------------------------------------------------------------*
+ * AtCmd_TCERTADD
+ *---------------------------------------------------------------------------*/
+ATCMD_RESP_E AtCmd_TCERTADD( char* name, int format, int location, uint8_t* ptr, int size )
+{
+	ATCMD_RESP_E resp=ATCMD_RESP_UNMATCH;
+	SPI_RESP_STATUS_E s;
+	char cmd[80];
+	char *result;
+
+	if( size < TXBUFFER_SIZE - 2 ){
+		sprintf( cmd, "AT+TCERTADD=%s,%d,%d,%d\r\n", name, format, size, location );
+		if( ATCMD_RESP_OK == AtCmd_SendCommand( cmd ) ){
+			TxBuffer[0] = ATCMD_ESC;
+			TxBuffer[1] = 'W';
+			memcpy(&TxBuffer[2], ptr, size);
+			s = WiFi_Write( (char *)TxBuffer, size+2 );
+
+			if( s == SPI_RESP_STATUS_OK ){
+		    	puts("ATCMD_RESP_OK");
+				resp = ATCMD_RESP_OK;
+			}else{
+		    	puts("ATCMD_RESP_SPI_ERROR");
+				resp = ATCMD_RESP_SPI_ERROR;
+			}
+			return resp;
+		}
+	} else {
+		puts("ATCMD_RESP_INPUT_TOO_LONG");
+		return ATCMD_RESP_INPUT_TOO_LONG;
+	}
+
+	return AtCmd_RecvResponse();
+
+}
+
+/*---------------------------------------------------------------------------*
+ * AtCmd_SETTIME
+ *---------------------------------------------------------------------------*/
+ATCMD_RESP_E AtCmd_SETTIME(char* time)
+{
+	ATCMD_RESP_E resp=ATCMD_RESP_UNMATCH;
+	char cmd[80];
+    sprintf( cmd, "AT+SETTIME=%s\r\n", time );
+	resp = AtCmd_SendCommand( cmd );
+	return resp;
+}
+
+/*---------------------------------------------------------------------------*
+ * AtCmd_SSLCONF
+ *---------------------------------------------------------------------------*/
+ATCMD_RESP_E AtCmd_SSLCONF(int size)
+{
+	ATCMD_RESP_E resp=ATCMD_RESP_UNMATCH;
+	char cmd[80];
+    sprintf( cmd, "AT+SSLCONF=1,%d\r\n", size );
+	resp = AtCmd_SendCommand( cmd );
+	return resp;
+}
+
+/*---------------------------------------------------------------------------*
+ * AtCmd_LOGLVL
+ *---------------------------------------------------------------------------*/
+ATCMD_RESP_E AtCmd_LOGLVL(int level)
+{
+	ATCMD_RESP_E resp=ATCMD_RESP_UNMATCH;
+	char cmd[80];
+    sprintf( cmd, "AT+LOGLVL=%d\r\n", level );
+	resp = AtCmd_SendCommand( cmd );
 	return resp;
 }
 

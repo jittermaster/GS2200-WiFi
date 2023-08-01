@@ -23,9 +23,11 @@
 #define  AP_SSID        "linksys"
 #define  PASSPHRASE     "0123456789"
 
-#define  HTTP_SRVR_IP  "192.168.1.100"
-#define  HTTP_PORT     "10080"
-#define  HTTP_GET_PATH "/"
-#define  HTTP_POST_PATH "/postData"
+#define  HTTP_SRVR_IP  "httpbin.org"
+#define  HTTP_PORT     "443"
+#define  HTTP_GET_PATH  "/get"
+#define  HTTP_POST_PATH "/post"
+
+#define ROOTCA_FILE    "*******.crt"
 
 #endif /*_CONFIG_H_*/

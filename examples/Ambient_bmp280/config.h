@@ -20,12 +20,10 @@
 /*-------------------------------------------------------------------------*
  * Configration
  *-------------------------------------------------------------------------*/
-#define  AP_SSID        "linksys"
-#define  PASSPHRASE     "0123456789"
+#define  AP_SSID        "AP_SSID_NAME"
+#define  PASSPHRASE     "123456789"
 
-#define  HTTP_SRVR_IP  "192.168.1.100"
-#define  HTTP_PORT     "10080"
-#define  HTTP_GET_PATH "/"
-#define  HTTP_POST_PATH "/postData"
+const uint32_t channelId = 00000;      // Please write your Ambient ID.
+const String writeKey = "xxxxxxxxxxxxxx"; // Please write your Ambient Key.
 
 #endif /*_CONFIG_H_*/

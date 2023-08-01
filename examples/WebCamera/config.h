@@ -20,12 +20,10 @@
 /*-------------------------------------------------------------------------*
  * Configration
  *-------------------------------------------------------------------------*/
-#define  AP_SSID        "linksys"
-#define  PASSPHRASE     "0123456789"
+#define  AP_SSID        "GS2200_LIMITED_AP"
+#define  PASSPHRASE     "123456789"
+#define  AP_CHANNEL     6
 
-#define  HTTP_SRVR_IP  "192.168.1.100"
-#define  HTTP_PORT     "10080"
-#define  HTTP_GET_PATH "/"
-#define  HTTP_POST_PATH "/postData"
+#define  TCPSRVR_PORT   "80"
 
 #endif /*_CONFIG_H_*/

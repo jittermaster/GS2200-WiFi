@@ -18,6 +18,9 @@
 #ifndef _GS_ATCM_H_
 #define _GS_ATCM_H_
 
+#ifndef SUBCORE
+#include "File.h"
+#endif
 
 #define ATCMD_INVALID_CID            0xFF  /* invalid CID */
 
@@ -222,8 +225,8 @@ ATCMD_RESP_E AtCmd_WREGDOMAIN_Q(ATCMD_REGDOMAIN_E *regDomain);
 ATCMD_RESP_E AtCmd_WREGDOMAIN(ATCMD_REGDOMAIN_E regDomain);
 ATCMD_RESP_E AtCmd_WM(ATCMD_MODE_E mode);
 ATCMD_RESP_E AtCmd_WSEC(ATCMD_SECURITYMODE_E security);
-ATCMD_RESP_E AtCmd_WPAPSK(char *pSsid, char *pPsk);
-ATCMD_RESP_E AtCmd_WA(char *pSsid, char *pBssid, uint8_t channel);
+ATCMD_RESP_E AtCmd_WPAPSK(const char *pSsid, const char *pPsk);
+ATCMD_RESP_E AtCmd_WA(const char *pSsid, const char *pBssid, uint8_t channel);
 ATCMD_RESP_E AtCmd_WWPS(uint8_t method, char *pin, ATCMD_WPSResult *result);
 ATCMD_RESP_E AtCmd_WSTATUS(void);
 ATCMD_RESP_E AtCmd_WD(void);
@@ -231,8 +234,8 @@ ATCMD_RESP_E AtCmd_NDHCP(uint8_t n);
 ATCMD_RESP_E AtCmd_DHCPSRVR(uint8_t start);
 ATCMD_RESP_E AtCmd_NSET(char *device, char *subnet, char *gateway);
 ATCMD_RESP_E AtCmd_NSTAT(ATCMD_NetworkStatus *pStatus);
-ATCMD_RESP_E AtCmd_NCTCP( char *destAddress, char *port, char *cid);
-ATCMD_RESP_E AtCmd_NCUDP(char *destAddress, char *port, char *srcPort, uint8_t *cid );
+ATCMD_RESP_E AtCmd_NCTCP(const char *destAddress, const char *port, char *cid);
+ATCMD_RESP_E AtCmd_NCUDP(const char *destAddress, const char *port, const char *srcPort, char *cid);
 ATCMD_RESP_E AtCmd_NSTCP(char *port, char *cid);
 ATCMD_RESP_E AtCmd_NSUDP(char *port, char *cid);
 ATCMD_RESP_E AtCmd_NCLOSE(uint8_t cid);
@@ -250,12 +253,24 @@ ATCMD_RESP_E AtCmd_UDP_SendBulkData(uint8_t cid, const void *txBuf, uint16_t dat
 ATCMD_RESP_E WaitForTCPConnection( char *cid, uint32_t timeout );
 ATCMD_RESP_E AtCmd_MQTTCONNECT( char *cid, char *host, char *port, char *clientID, char *UserName, char *Password );
 ATCMD_RESP_E AtCmd_MQTTPUBLISH( char cid, ATCMD_MQTTparams mqttparams );
-ATCMD_RESP_E AtCmd_HTTPOPEN( char *cid, char *host, char *port );
-ATCMD_RESP_E AtCmd_HTTPCONF( ATCMD_HTTP_HEADER_E param, char *val );
-ATCMD_RESP_E AtCmd_HTTPSEND( char cid, ATCMD_HTTP_METHOD_E type, uint8_t timeout, char *page, char *msg, uint32_t size );
+ATCMD_RESP_E AtCmd_MQTTSUBSCRIBE( char cid, ATCMD_MQTTparams mqttparams );
+ATCMD_RESP_E AtCmd_HTTPOPEN( char *cid, const char *host, const char *port );
+ATCMD_RESP_E AtCmd_HTTPSOPEN( char *cid, const char *host, const char *port, const char *ca_name );
+ATCMD_RESP_E AtCmd_HTTPCONF( ATCMD_HTTP_HEADER_E param, const char *val );
+ATCMD_RESP_E AtCmd_HTTPSEND( char cid, ATCMD_HTTP_METHOD_E type, uint8_t timeout, const char *page, const char *msg, uint32_t size );
 ATCMD_RESP_E AtCmd_HTTPCLOSE( char cid );
 ATCMD_RESP_E AtCmd_DNSLOOKUP( char *host, char *ip );
 ATCMD_RESP_E AtCmd_APCLIENTINFO(void);
+
+#ifndef SUBCORE
+ATCMD_RESP_E AtCmd_TCERTADD( char* name, int format, int location, File fp );
+#endif
+ATCMD_RESP_E AtCmd_TCERTADD( char* name, int format, int location, uint8_t* ptr, int size );
+ATCMD_RESP_E AtCmd_SETTIME(char* time);
+ATCMD_RESP_E AtCmd_SSLCONF(int size);
+ATCMD_RESP_E AtCmd_LOGLVL(int level);
+
+ATCMD_RESP_E AtCmd_RecieveMQTTData( String& topic );
 
 #endif /* _GS_ATCMD_H_ */
 

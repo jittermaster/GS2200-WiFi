@@ -1,6 +1,6 @@
 /*
  *  SPRESENSE_WiFi.ino - GainSpan WiFi Module Control Program
- *  Copyright 2019 Norikazu Goto
+ *  Copyright 2022 Spresense Users
  *
  *  This work is free software; you can redistribute it and/or modify it under the terms 
  *  of the GNU Lesser General Public License as published by the Free Software Foundation; 
@@ -19,9 +19,8 @@
 #include <TelitWiFi.h>
 #include "config.h"
 
-
 #define  CONSOLE_BAUDRATE  115200
-
+#define  SUBSCRIBE_TIMEOUT 60000	//ms
 /*-------------------------------------------------------------------------*
  * Globals:
  *-------------------------------------------------------------------------*/
@@ -53,47 +52,66 @@ void setup() {
 		ConsoleLog("Association Fails");
 		while(1);
 	}
+ 
 	hostParams.host = (char *)MQTT_SRVR;
 	hostParams.port = (char *)MQTT_PORT;
 	hostParams.clientID = (char *)MQTT_CLI_ID;
 	hostParams.userName = NULL;
 	hostParams.password = NULL;
-
 	theMqttGs2200.begin(&hostParams);
-
 	digitalWrite( LED0, HIGH ); // turn on LED
 }
 
+char server_cid = 0;
 bool served = false;
 uint16_t len, count=0;
 MQTTGS2200_Mqtt mqtt;
 
 // the loop function runs over and over again forever
 void loop() {
+
 	if (!served) {
 		// Start a MQTT client
 		ConsoleLog( "Start MQTT Client");
 		if (false == theMqttGs2200.connect()) {
 			return;
 		}
-		served = true;
-	}
-	else {
-		ConsoleLog( "Start to send MQTT Message");
+
+		ConsoleLog( "Start to receive MQTT Message");
 		// Prepare for the next chunck of incoming data
 		WiFi_InitESCBuffer();
-		// Start the loop to send the data
+
+		// Start the loop to receive the data
 		strncpy(mqtt.params.topic, MQTT_TOPIC , sizeof(mqtt.params.topic));
 		mqtt.params.QoS = 0;
 		mqtt.params.retain = 0;
-		while (served) {
-			snprintf(mqtt.params.message, sizeof(mqtt.params.message), "%d", count++ );
-			mqtt.params.len = strlen(mqtt.params.message);
-			if (true == theMqttGs2200.publish(&mqtt)) {
-				ConsolePrintf( "%d was sent\r\n", count-1 );
-			}
+		if (true == theMqttGs2200.subscribe(&mqtt)) {
+			ConsolePrintf( "Subscribed! \n" );
+		} 
 
-			delay(5000); // every 5 sec
+		served = true;
+	}
+	else {
+		uint64_t start = millis();
+		while (served) {
+			if (msDelta(start) < SUBSCRIBE_TIMEOUT ) {
+				String data;
+				/* just in case something from GS2200 */
+				while (gs2200.available()) {
+					if (false == theMqttGs2200.receive(data)) {
+						served = false; // quite the loop
+						break;
+					}
+
+					Serial.println("Recieve data: " + data);
+				}
+				start = millis();
+			} else {
+				ConsolePrintf("Subscribed over for %d ms! \n", SUBSCRIBE_TIMEOUT);
+				theMqttGs2200.stop();
+				served = false;
+				exit(0);
+			}
 		}
 	}
 }

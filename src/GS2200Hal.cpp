@@ -40,6 +40,7 @@
 
 //#define GS_DEBUG
 
+static int GPIO37 = 27;
 
 /*-------------------------------------------------------------------------*
  * Globals:
@@ -48,7 +49,6 @@ uint8_t ESCBuffer[MAX_RECEIVED_DATA + 1];
 uint32_t ESCBufferCnt = 0;
 
 uint8_t pendingDataFlag = 0;
-
 
 
 /*---------------------------------------------------------------------------*
@@ -71,12 +71,23 @@ uint32_t msDelta(uint32_t start)
 
 
 /*---------------------------------------------------------------------------*
- * Init_GS2200_SPI
+ * Init_GS2200_SPI with type
  *---------------------------------------------------------------------------*
  * Function: Initialize GS2200 SPI
  *---------------------------------------------------------------------------*/
-void Init_GS2200_SPI(void)
+void Init_GS2200_SPI_type(ModuleType type)
 {
+	switch(type) {
+	case iS110B_TypeC:
+		puts("Is Your module iS110B_TypeC ?");
+		GPIO37 = 20;
+		break;
+	default:
+		puts("Is Your module iS110B_TypeA or iS110B_TypeB ?");
+		GPIO37 = 27;
+		break;
+	}
+
 	/* Start the SPI library for GS2200 control*/
 	SPI_PORT.begin();
 	/* Set GPIO37 monitor pin */
@@ -87,6 +98,17 @@ void Init_GS2200_SPI(void)
 	ConsoleLog( "GS2200 is ready to go." );
 }
 
+/*---------------------------------------------------------------------------*
+ * Init_GS2200_SPI
+ *---------------------------------------------------------------------------*
+ * Function: Initialize GS2200 SPI for compatibility
+ *---------------------------------------------------------------------------*/
+void Init_GS2200_SPI(void)
+{
+	/* Start the SPI library for GS2200 control*/
+	Init_GS2200_SPI_type(iS110B_TypeA);
+
+}
 
 /*-----------------------------------------------------------------------------*
  * Get_GPIO37Status
@@ -97,7 +119,7 @@ void Init_GS2200_SPI(void)
  *-----------------------------------------------------------------------------*/
 int Get_GPIO37Status(void)
 {
-	return digitalRead( GPIO37 );         
+	return digitalRead( GPIO37 );
 }
 
 
@@ -229,7 +251,7 @@ SPI_RESP_STATUS_E WiFi_Write(const void *txData, uint16_t dataLength)
 		ConsolePrintf( "hiResponse[5]:0x%x\r\n", hiResponse[5] );
 		ConsolePrintf( "hiResponse[6]:0x%x\r\n", hiResponse[6] );
 		ConsolePrintf( "recvLen:%d\r\n", recvLen );
-#endif    
+#endif
 		return SPI_RESP_STATUS_ERROR;
 	}
 }
@@ -314,7 +336,7 @@ SPI_RESP_STATUS_E WiFi_Read(uint8_t *rxData, uint16_t *rxDataLen)
 		return SPI_RESP_STATUS_ERROR;
 	}
 	// Read Data Header
-	Read_HeaderResponse(spiHeader);       
+	Read_HeaderResponse(spiHeader); 
 	
 	// Read data from GS2200
 	Read_Data( rxData, *rxDataLen );
@@ -412,7 +434,7 @@ void ConsoleByteSend(uint8_t data)
 }
 
 
-#define PRINTFBUFFER 1024
+#define PRINTFBUFFER 2048
 void ConsolePrintf( const char *fmt, ...)
 {
         char buf[PRINTFBUFFER]; // resulting string limited to 128 chars

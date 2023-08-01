@@ -22,12 +22,14 @@
 /*-------------------------------------------------------------------------*
  * Globals:
  *-------------------------------------------------------------------------*/
-const uint8_t TCP_Data[] = "GS2200 TCP Client Data Transfer Test.";
-const uint16_t TCP_RECEIVE_PACKET_SIZE = 1500;
-uint8_t TCP_Receive_Data[TCP_RECEIVE_PACKET_SIZE] = {0};
-
 TelitWiFi gs2200;
 TWIFI_Params gsparams;
+const uint8_t UDP_Data[] = "GS2200 UDP Client Data Transfer Test.";
+const uint16_t UDP_PACKET_SIZE = 37; 
+
+const uint16_t UDP_RECEIVE_PACKET_SIZE = 1500; 
+uint8_t UDP_Receive_Data[UDP_RECEIVE_PACKET_SIZE] = {0};
+
 /*-------------------------------------------------------------------------*
  * Function ProtoTypes:
  *-------------------------------------------------------------------------*/
@@ -120,19 +122,20 @@ void setup() {
 		while(1);
 	}
 	digitalWrite(LED0, HIGH); // turn on LED
+
 }
 
 // the loop function runs over and over again forever
 void loop() {
 	char server_cid = 0;
 	bool served = false;
-	uint32_t timer=0;
+	uint32_t timer = 0;
 	int receive_size = 0;
 	while (1) {
 		if (!served) {
-			// Start a TCP client
-			ConsoleLog("Start TCP Client");
-			server_cid = gs2200.connect(TCPSRVR_IP, TCPSRVR_PORT);
+			ConsoleLog("Start UDP Client");
+			// Create UDP Client
+			server_cid = gs2200.connectUDP(UDPSRVR_IP, UDPSRVR_PORT, LocalPort);
 			ConsolePrintf("server_cid: %d \r\n", server_cid);
 			if (server_cid == ATCMD_INVALID_CID) {
 				continue;
@@ -140,23 +143,26 @@ void loop() {
 			served = true;
 		}
 		else {
-			ConsoleLog("Start to send TCP Data");
+			ConsoleLog("Start to send UDP Data");
 			// Prepare for the next chunck of incoming data
 			WiFi_InitESCBuffer();
+			ConsolePrintf("\r\n");
 
-			// Start the infinite loop to send the data
 			while (1) {
-				if (false == gs2200.write(server_cid, TCP_Data, strlen((const char*)TCP_Data))) {
-					// Data is not sent, we need to re-send the data
-					delay(10);
-				}
-				while (gs2200.available()) {
-					receive_size = gs2200.read(server_cid, TCP_Receive_Data, TCP_RECEIVE_PACKET_SIZE);
-					if (0 < receive_size) {
-						ConsolePrintf("Receive %d byte:%s \r\n", receive_size, TCP_Receive_Data);
-						memset(TCP_Receive_Data, 0, TCP_RECEIVE_PACKET_SIZE);
-						WiFi_InitESCBuffer();
+				gs2200.write(server_cid, UDP_Data, UDP_PACKET_SIZE);
+
+				// Description: Wait for a response after sending a command. Keep parsing the data until a response is found.
+				receive_size = gs2200.read(server_cid, UDP_Receive_Data, UDP_RECEIVE_PACKET_SIZE);
+				if (0 < receive_size) {
+					ConsolePrintf("%d byte Recieved successfully. \r\n", receive_size);
+					for (int i = 0; i < receive_size; i++) {
+						ConsolePrintf("%c", UDP_Receive_Data[i]);
 					}
+					ConsolePrintf("\r\n");
+
+					memset(UDP_Receive_Data, 0, UDP_RECEIVE_PACKET_SIZE);
+					WiFi_InitESCBuffer();
+					delay(100);
 				}
 
 				if (msDelta(timer) > 100) {
