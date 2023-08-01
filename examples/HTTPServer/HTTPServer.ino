@@ -83,7 +83,7 @@ void loop() {
   uint32_t timer = 5000;
   
   ConsoleLog("Start TCP Server");
-  server_cid = gs2200.start((char*)TCPSRVR_PORT);
+  server_cid = gs2200.start_tcp_server((char*)TCPSRVR_PORT);
   if (server_cid == ATCMD_INVALID_CID) {
     delay(2000);
     return;
@@ -100,6 +100,7 @@ void loop() {
 
     // Start the echo server
     while (gs2200.available()) {
+      WiFi_InitESCBuffer();
       if (0 < gs2200.read(remote_cid, Receive_Data, RECEIVE_PACKET_SIZE)) {
           ConsolePrintf("Received : %s\r\n", Receive_Data);
           String message = (char*)Receive_Data;
@@ -113,7 +114,6 @@ void loop() {
             }
           }
       }
-      WiFi_InitESCBuffer();
     }
   }
 }
